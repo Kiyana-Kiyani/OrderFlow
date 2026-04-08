@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OrderFlow.Application.Configuration;
 using RabbitMQ.Client;
 
 namespace OrderFlow.Api
@@ -15,15 +16,27 @@ namespace OrderFlow.Api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddSingleton<IConnection>(sp =>
+            builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
+            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??  throw new InvalidOperationException("RabbitMQ configuration is missing.");
+            if (string.IsNullOrWhiteSpace(rabbit.Host) ||
+           string.IsNullOrWhiteSpace(rabbit.Username) ||
+           string.IsNullOrWhiteSpace(rabbit.Password) ||
+           rabbit.Port <= 0)
             {
-                var factory = new ConnectionFactory
-                {
-                    Uri = new Uri(builder.Configuration["RabbitMQ:ConnectionString"]!)
-                };
+                throw new InvalidOperationException("RabbitMQ configuration is invalid.");
+            }
+            builder.Services.AddSingleton<IConnection>(sp =>
+              {
+                  var factory = new ConnectionFactory
+                  {
+                      HostName = rabbit.Host,
+                      Port = rabbit.Port,
+                      UserName = rabbit.Username,
+                      Password = rabbit.Password
+                  };
+                  return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+              });
 
-                return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-            });
 
             builder.Services.AddHealthChecks()
                 .AddSqlServer(
@@ -32,7 +45,7 @@ namespace OrderFlow.Api
                     name: "sqlserver",
                     tags: new[] { "ready" })
                 .AddRabbitMQ(
-                    factory: sp => sp.GetRequiredService<IConnection>(),
+                    sp => sp.GetRequiredService<IConnection>(),
                     failureStatus: HealthStatus.Unhealthy,
                     name: "rabbitmq",
                     tags: new[] { "ready" }
