@@ -25,4 +25,8 @@
     <ProjectReference Include="..\OrderFlow.Domain\OrderFlow.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Persistence\Configurations\" />
+  </ItemGroup>
+
 </Project>

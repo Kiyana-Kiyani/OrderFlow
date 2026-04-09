@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using OrderFlow.Application.Configuration;
+using OrderFlow.Infrastructure.Identity;
+using OrderFlow.Infrastructure.Persistence;
 using RabbitMQ.Client;
 
 namespace OrderFlow.Api
@@ -16,8 +20,14 @@ namespace OrderFlow.Api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("Default")!));
+
+            builder.Services.AddIdentity<AppIdentityUser, IdentityRole<Guid>>()
+                .AddEntityFrameworkStores<ApplicationDbContext>();
+
             builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
-            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??  throw new InvalidOperationException("RabbitMQ configuration is missing.");
+            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ?? throw new InvalidOperationException("RabbitMQ configuration is missing.");
             if (string.IsNullOrWhiteSpace(rabbit.Host) ||
            string.IsNullOrWhiteSpace(rabbit.Username) ||
            string.IsNullOrWhiteSpace(rabbit.Password) ||
