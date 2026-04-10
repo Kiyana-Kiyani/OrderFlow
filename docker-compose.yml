@@ -19,6 +19,11 @@ services:
       RabbitMQ__Port: 5672
       RabbitMQ__Username: guest
       RabbitMQ__Password: guest
+      # Jwt
+      Jwt__Audience: ${JwtAudience}
+      Jwt__Issuer: ${JwtIssuer}
+      Jwt__SecretKey: ${JwtSecretKey}
+      Jwt__ExpirationMinutes: ${JwtExpirationMinutes}
 
     ports:
        - "5000:8080"
