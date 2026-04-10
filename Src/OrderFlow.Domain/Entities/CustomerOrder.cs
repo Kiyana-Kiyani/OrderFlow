@@ -30,15 +30,16 @@ namespace OrderFlow.Domain.Entities
 
         public void AddOrderItem(int quantity, decimal unitPrice, Guid menuItemId, string menuItemName)
         {
+            EnsureEditable();
+
             if (menuItemId == Guid.Empty) throw new ArgumentException("Menu item is required.", nameof(menuItemId));
             if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
             if (unitPrice <= 0) throw new ArgumentOutOfRangeException(nameof(unitPrice), "Unit price must be greater than zero.");
 
             var orderItem = _orderItems.FirstOrDefault(x => x.MenuItemId == menuItemId);
+         
             if (orderItem != null)
-            {
                 orderItem.ChangeQuantity(orderItem.Quantity + quantity);
-            }
             else
             {
                 var newOrderItem = new OrderItem(quantity, unitPrice, menuItemId, menuItemName, Id);
