@@ -16,7 +16,6 @@ namespace OrderFlow.Application.Features.Resturant.GetResturantById
         public async Task<GetRestaurantByIdResponse> Handle(GetRestaurantByIdQuery query, CancellationToken cancellationToken)
         {
             var result = await _dbContext.Restaurants
-                .AsNoTracking()
                 .Where(x => x.Id == query.Id)
                 .Select(x => new GetRestaurantByIdResponse(
                     x.Id,

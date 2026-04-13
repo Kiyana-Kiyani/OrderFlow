@@ -18,7 +18,7 @@ namespace OrderFlow.Application.Behaviors
             if (_validators.Any())
             {
                 var context = new ValidationContext<TRequest>(request);
-                var validationResults = _validators.Select(v => v.Validate(context)).ToList();
+                var validationResults =  await Task.WhenAll(_validators.Select(v => v.ValidateAsync(context, cancellationToken)));
                 var failures = validationResults.SelectMany(r => r.Errors).Where(f => f != null).ToList();
                 if (failures.Count != 0)
                 {

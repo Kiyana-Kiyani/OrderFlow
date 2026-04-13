@@ -15,7 +15,7 @@ namespace OrderFlow.Application.Features.Resturant.GetResturants
 
         public async Task<IReadOnlyList<GetRestaurantsResponse>> Handle(GetRestaurantsQuery request, CancellationToken cancellationToken)
         {
-          var result = await _context.Restaurants.AsNoTracking()
+          var result = await _context.Restaurants
             .Select(r => new GetRestaurantsResponse
             (
                 r.Id,

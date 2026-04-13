@@ -3,9 +3,7 @@ name: orderflow
 services:
   orderflow.api:
     container_name: api 
- 
-    image: ${DOCKER_REGISTRY-}orderflowapi
- 
+    image: ${DOCKER_REGISTRY-}orderflowapi 
     build:
       context: .
       dockerfile: Src/OrderFlow.Api/Dockerfile
@@ -70,8 +68,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-
-
  
 
 volumes:
