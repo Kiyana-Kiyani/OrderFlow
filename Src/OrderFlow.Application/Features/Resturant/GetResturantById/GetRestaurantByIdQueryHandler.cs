@@ -1,11 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrderFlow.Application.Features.Resturant.GetResturantById
 {
@@ -21,6 +16,7 @@ namespace OrderFlow.Application.Features.Resturant.GetResturantById
         public async Task<GetRestaurantByIdResponse> Handle(GetRestaurantByIdQuery query, CancellationToken cancellationToken)
         {
             var result = await _dbContext.Restaurants
+                .AsNoTracking()
                 .Where(x => x.Id == query.Id)
                 .Select(x => new GetRestaurantByIdResponse(
                     x.Id,

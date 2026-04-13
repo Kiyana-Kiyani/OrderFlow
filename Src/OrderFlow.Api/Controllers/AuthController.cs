@@ -10,18 +10,18 @@ namespace OrderFlow.Api.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IMediator _mediator;
+        private readonly ISender _sender;
 
-        public AuthController(IMediator mediator)
+        public AuthController(ISender sender)
         {
-            _mediator = mediator;
+            _sender = sender;
         }
 
         [HttpPost("register")]
         [ProducesResponseType(typeof(RegisterUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Register([FromBody] RegisterUserCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command, cancellationToken);
+            var result = await _sender.Send(command, cancellationToken);
             return Ok(result);
         }
 
@@ -29,7 +29,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(LoginUserResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(command, cancellationToken);
+            var result = await _sender.Send(command, cancellationToken);
             return Ok(result);
         }
     }

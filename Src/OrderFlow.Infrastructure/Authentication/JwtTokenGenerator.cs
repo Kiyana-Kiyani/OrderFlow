@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Infrastructure.Identity;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -11,12 +9,10 @@ namespace OrderFlow.Infrastructure.Authentication
 {
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
-        private readonly UserManager<AppIdentityUser> _userManager;
         private readonly JwtOptions _jwtOptions;
 
-        public JwtTokenGenerator(UserManager<AppIdentityUser> userManager, IOptions<JwtOptions> jwtOptions)
+        public JwtTokenGenerator(IOptions<JwtOptions> jwtOptions)
         {
-            _userManager = userManager;
             _jwtOptions = jwtOptions.Value;
         }
         public async Task<string> GenerateTokenAsync(Guid id, string email, IEnumerable<string> roles)

@@ -18,10 +18,10 @@ namespace OrderFlow.Api.Controllers
     [ApiController]
     public class RestaurantsController : ControllerBase
     {
-        private readonly IMediator _mediator;
-        public RestaurantsController(IMediator mediator)
+        private readonly ISender _sender;
+        public RestaurantsController(ISender sender)
         {
-            _mediator = mediator;
+            _sender = sender;
         }
 
         // GET: api/<RestaurantsController>/
@@ -29,7 +29,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(GetRestaurantsResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetRestaurantsQuery(), cancellationToken);
+            var result = await _sender.Send(new GetRestaurantsQuery(), cancellationToken);
             return Ok(result);
         }
 
@@ -38,7 +38,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(GetRestaurantByIdResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
         {
-            var response = await _mediator.Send(new GetRestaurantByIdQuery(id), cancellationToken);
+            var response = await _sender.Send(new GetRestaurantByIdQuery(id), cancellationToken);
             return Ok(response);
         }
 
@@ -48,7 +48,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
+            var result = await _sender.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
             return Ok(result);
         }
 
@@ -58,7 +58,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateResturant([FromBody] CreateRestaurantCommand createRestaurantCommand, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(createRestaurantCommand, cancellationToken);
+            var result = await _sender.Send(createRestaurantCommand, cancellationToken);
             return Created(string.Empty, result);
 
         }
@@ -76,7 +76,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
         {
-             await _mediator.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
+             await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
             return NoContent();
         }
 
@@ -85,7 +85,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ActivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
+            await _sender.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
 
         }
@@ -95,7 +95,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeactivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
+            await _sender.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
 
         }
@@ -105,7 +105,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantDescription(Guid restaurantId, [FromBody] string newDescription, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new ChangeRestaurantDescriptionCommand(restaurantId, newDescription), cancellationToken);
+            await _sender.Send(new ChangeRestaurantDescriptionCommand(restaurantId, newDescription), cancellationToken);
             return NoContent();
         }
 
@@ -114,11 +114,8 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
         {
-            await _mediator.Send(new ChangeRestaurantNameCommand(restaurantId, newName), cancellationToken);
+            await _sender.Send(new ChangeRestaurantNameCommand(restaurantId, newName), cancellationToken);
             return NoContent();
         }
-
-
-
     }
 }
