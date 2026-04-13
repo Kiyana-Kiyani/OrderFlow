@@ -7,8 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OrderFlow.Contracts\OrderFlow.Contracts.csproj" />
     <ProjectReference Include="..\OrderFlow.Domain\OrderFlow.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Resturant\Menu Items\AddMenuItem\" />
+    <Folder Include="Features\Resturant\Menu Items\ChangeMenuItemDescription\" />
+    <Folder Include="Features\Resturant\Menu Items\ChangeMenuItemPrice\" />
+    <Folder Include="Features\Resturant\Menu Items\MarkMenuItemAvailable\" />
+    <Folder Include="Features\Resturant\Menu Items\MarkMenuItemUnavailable\" />
+    <Folder Include="Features\Resturant\Menu Items\GetMenuItems\" />
+    <Folder Include="Features\Resturant\Menu Items\GetMenuItemById\" />
+    <Folder Include="Features\Resturant\Menu Items\RemoveMenuItemById\" />
   </ItemGroup>
 
 </Project>

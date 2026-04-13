@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using OrderFlow.Application.Abstractions;
 using OrderFlow.Domain.Entities;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Persistence.Configurations;
 
 namespace OrderFlow.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid>
+    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid> , IApplicationDbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {

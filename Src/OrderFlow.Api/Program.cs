@@ -1,76 +1,73 @@
+using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.OpenApi.Models;
+using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
-using OrderFlow.Infrastructure.Identity;
-using OrderFlow.Infrastructure.Persistence;
+using OrderFlow.Infrastructure.DependencyInjection;
+using OrderFlow.Infrastructure.Persistence.Seed;
 using RabbitMQ.Client;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace OrderFlow.Api
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
 
             var builder = WebApplication.CreateBuilder(args);
 
-            //Cnfiguration 
-            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??
-                throw new InvalidOperationException("RabbitMQ configuration is missing.");
+            builder.Services.AddInfrastructure(builder.Configuration);
 
-            //Services
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("Default")!));
-
-            builder.Services.AddIdentity<AppIdentityUser, IdentityRole<Guid>>(options =>
+            builder.Services.AddSwaggerGen(options =>
             {
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = true;
-                options.Password.RequiredLength = 6;
-                options.Password.RequiredUniqueChars = 1;
-            }).AddEntityFrameworkStores<ApplicationDbContext>();
 
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-
-            }).AddJwtBearer(options =>
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    options.SaveToken = true;
-                    options.RequireHttpsMetadata = false;
-                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                        ValidAudience = builder.Configuration["Jwt:Audience"],
-                        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
-                        ClockSkew = TimeSpan.FromMinutes(1),
-                    };
+                    In = ParameterLocation.Header,
+                    Description = "Please enter a valid token",
+                    BearerFormat = "JWT",
+                    Scheme = "Bearer",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.Http,
+
                 });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
+
+            builder.Services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly));
+
+            builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
 
+            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??
+                   throw new InvalidOperationException("RabbitMQ configuration is missing.");
 
             if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-                   string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0 )
-                {
-                    throw new InvalidOperationException("RabbitMQ configuration is invalid.");
-                }
-          
+                   string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
+            {
+                throw new InvalidOperationException("RabbitMQ configuration is invalid.");
+            }
+
             builder.Services.AddSingleton<IConnection>(sp =>
               {
                   var factory = new ConnectionFactory
@@ -97,18 +94,18 @@ namespace OrderFlow.Api
                     tags: new[] { "ready" }
                 );
 
-
-
             var app = builder.Build();
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+
+                await IdentityDataSeeder.RoleSeederAsync(app.Services);
+                await IdentityDataSeeder.AdminSeederAsync(app.Services);
             }
 
 
             app.UseHttpsRedirection();
-            app.UseRouting();
 
             app.UseAuthentication();
             app.UseAuthorization();
