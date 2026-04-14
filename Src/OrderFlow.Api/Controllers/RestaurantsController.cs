@@ -54,7 +54,7 @@ namespace OrderFlow.Api.Controllers
 
         // POST api/<RestaurantsController>
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status201Created)]
         public async Task<IActionResult> CreateResturant([FromBody] CreateRestaurantCommand createRestaurantCommand, CancellationToken cancellationToken)
         {

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
 {
-    public record CreateRestaurantCommand(string Name, string Address, string? Description)
+    public record CreateRestaurantCommand(string Name, string Address, string? Description, Guid OwnerId)
         : IRequest<CreateRestaurantResponse>;
 
 }

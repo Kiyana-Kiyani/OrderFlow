@@ -14,7 +14,7 @@ namespace OrderFlow.Application.Features.Auth.Register
 
         public async Task<RegisterUserResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RegisterAsync( request.Email, request.Password, cancellationToken);
+            var result = await _authService.RegisterAsync(request.Email, request.Password, cancellationToken);
 
             if (!result.Succeeded || result.UserId is null || string.IsNullOrEmpty(result.Token))
                 throw new InvalidOperationException(result.Error ?? "Registration failed.");

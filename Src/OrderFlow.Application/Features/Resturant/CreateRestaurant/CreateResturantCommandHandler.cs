@@ -1,19 +1,15 @@
 ﻿using MediatR;
 using OrderFlow.Application.Abstractions;
-using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Domain.Entities;
 
 namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
 {
-    public class CreateResturantCommandHandler : IRequestHandler<CreateRestaurantCommand , CreateRestaurantResponse>
+    public class CreateResturantCommandHandler : IRequestHandler<CreateRestaurantCommand, CreateRestaurantResponse>
     {
-        private readonly ICurrentUser _currentUser;
         private readonly IApplicationDbContext _dbContext;
 
-
-        public CreateResturantCommandHandler(ICurrentUser currentUser, IApplicationDbContext dbContext)
+        public CreateResturantCommandHandler(IApplicationDbContext dbContext)
         {
-            _currentUser = currentUser;
             _dbContext = dbContext;
         }
 
@@ -24,7 +20,7 @@ namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
                 name: request.Name,
                 address: request.Address,
                 description: request.Description,
-                ownerUserId: _currentUser.UserId
+                ownerUserId: request.OwnerId
             );
 
             _dbContext.Restaurants.Add(restaurant);

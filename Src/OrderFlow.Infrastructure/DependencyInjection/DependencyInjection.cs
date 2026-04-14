@@ -20,8 +20,12 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICurrentUser, CurrentUser>();
             services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+            services.AddScoped<IAdminService, AdminService>();
+            services.AddScoped<ApplicationDbContext>();
 
             services.AddHttpContextAccessor();
+
+            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("Default")!));
