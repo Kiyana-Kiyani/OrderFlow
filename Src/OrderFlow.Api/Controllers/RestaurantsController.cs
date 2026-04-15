@@ -32,7 +32,7 @@ namespace OrderFlow.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(GetRestaurantByIdResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
         {
@@ -40,9 +40,9 @@ namespace OrderFlow.Api.Controllers
             return Ok(response);
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin,Owner")]
-        [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType( StatusCodes.Status200OK)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             await _sender.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
@@ -77,7 +77,7 @@ namespace OrderFlow.Api.Controllers
             return NoContent();
         }
 
-        [HttpPatch("{restaurantId:guid}/dactivate")]
+        [HttpPatch("{restaurantId:guid}/deactivate")]
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeactivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)

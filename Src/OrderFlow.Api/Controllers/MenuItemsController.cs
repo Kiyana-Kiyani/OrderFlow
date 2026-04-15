@@ -99,7 +99,7 @@ namespace OrderFlow.Api.Controllers
         }
 
 
-        [HttpDelete]
+        [HttpDelete("{menuItemId:guid}")]
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
