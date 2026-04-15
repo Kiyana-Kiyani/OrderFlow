@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Application.Common;
+using OrderFlow.Application.Features.Admin.Common;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Persistence;
 

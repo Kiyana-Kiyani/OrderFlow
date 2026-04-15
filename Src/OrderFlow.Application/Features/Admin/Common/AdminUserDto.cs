@@ -1,4 +1,4 @@
-﻿namespace OrderFlow.Application.Common
+﻿namespace OrderFlow.Application.Features.Admin.Common
 {
     public record AdminUserDto(
         Guid UserId,

@@ -1,4 +1,4 @@
-﻿using OrderFlow.Application.Common;
+﻿using OrderFlow.Application.Features.Admin.Common;
 
 namespace OrderFlow.Application.Abstractions.Authentication
 {

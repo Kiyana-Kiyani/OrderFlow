@@ -40,6 +40,8 @@ namespace OrderFlow.Infrastructure.Authentication
         }
 
         public ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User ?? throw new UnauthorizedAccessException("User is not authenticated.");
+        //public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User.
 
     }
+
 }

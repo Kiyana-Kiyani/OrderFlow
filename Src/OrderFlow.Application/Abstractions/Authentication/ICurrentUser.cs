@@ -7,5 +7,7 @@ namespace OrderFlow.Application.Abstractions.Authentication
         Guid UserId { get; }
         IReadOnlyList<string> Roles { get; }
         ClaimsPrincipal User { get; }
+        string? Email { get; }
+        bool IsAuthenticated { get; }
     }
 }
