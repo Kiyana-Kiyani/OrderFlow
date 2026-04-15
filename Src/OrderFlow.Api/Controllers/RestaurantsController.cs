@@ -24,7 +24,6 @@ namespace OrderFlow.Api.Controllers
             _sender = sender;
         }
 
-        // GET: api/<RestaurantsController>/
         [HttpGet]
         [ProducesResponseType(typeof(GetRestaurantsResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -33,7 +32,6 @@ namespace OrderFlow.Api.Controllers
             return Ok(result);
         }
 
-        // GET: api/<RestaurantsController>/1
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(GetRestaurantByIdResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -42,17 +40,15 @@ namespace OrderFlow.Api.Controllers
             return Ok(response);
         }
 
-        // DELETE api/<RestaurantsController>/5
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
-            return Ok(result);
+            await _sender.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
+            return Ok();
         }
 
-        // POST api/<RestaurantsController>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status201Created)]
@@ -63,45 +59,35 @@ namespace OrderFlow.Api.Controllers
 
         }
 
-        //// PUT api/<RestaurantsController>/5
-        //[HttpPatch("{restaurantId:guid}/menueitems/{menuItemId:guid}/name")]
-        //public async Task<IActionResult> ChangeMneuItemName(Guid restaurantId, Guid menuItemId, [FromBody] , CancellationToken cancellationToken)
-        //{
-
-
-        //}
-
         [HttpPatch("{restaurantId:guid}/address")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
         {
-             await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
+            await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
             return NoContent();
         }
 
         [HttpPatch("{restaurantId:guid}/activate")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ActivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
         {
             await _sender.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
-
         }
 
         [HttpPatch("{restaurantId:guid}/dactivate")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeactivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
         {
             await _sender.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
-
         }
 
         [HttpPatch("{restaurantId:guid}/description")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantDescription(Guid restaurantId, [FromBody] string newDescription, CancellationToken cancellationToken)
         {
@@ -110,7 +96,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPatch("{restaurantId:guid}/name")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> ChangeRestaurantName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
         {

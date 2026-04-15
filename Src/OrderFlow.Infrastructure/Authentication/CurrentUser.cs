@@ -25,5 +25,21 @@ namespace OrderFlow.Infrastructure.Authentication
                 return Guid.Parse(id);
             }
         }
+
+        public IReadOnlyList<string> Roles
+        {
+            get
+            {
+                var user = _httpContextAccessor.HttpContext?.User;
+
+                if (user is null)
+                    throw new UnauthorizedAccessException("User is not authenticated.");
+
+               return user.FindAll(ClaimTypes.Role).Select(x => x.Value).ToList();
+            }
+        }
+
+        public ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User ?? throw new UnauthorizedAccessException("User is not authenticated.");
+
     }
 }

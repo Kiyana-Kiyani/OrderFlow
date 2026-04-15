@@ -1,22 +1,37 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using OrderFlow.Application.Abstractions;
+using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Security.Authorization;
 
 namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantName
 {
     public class ChangeRestaurantNameCommandHandler : IRequestHandler<ChangeRestaurantNameCommand>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly ICurrentUser _currentUser;
+        private readonly IAuthorizationService _authorizationService;
 
-        public ChangeRestaurantNameCommandHandler(IApplicationDbContext dbContext)
+        public ChangeRestaurantNameCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
         {
             _dbContext = dbContext;
+            _currentUser = currentUser;
+            _authorizationService = authorizationService;
         }
 
         public async Task Handle(ChangeRestaurantNameCommand request, CancellationToken cancellationToken)
         {
-            await _dbContext.Restaurants.Where(x => x.Id == request.RestaurantId)
-                .ExecuteUpdateAsync(x => x.SetProperty(r => r.Name, request.NewName), cancellationToken);
+            var restaurant = await _dbContext.Restaurants.FindAsync(new object[] { request.RestaurantId }, cancellationToken);
+            if (restaurant == null)
+                throw new KeyNotFoundException("Restaurant not found.");
+
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_currentUser.User, restaurant, new ResourceOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+                throw new UnauthorizedAccessException("You are not allowed to edit this item.");
+
+            restaurant.ChangeName(request.NewName);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
         }
     }
 }

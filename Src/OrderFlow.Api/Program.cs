@@ -1,10 +1,12 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
+using OrderFlow.Application.Security.Authorization;
 using OrderFlow.Infrastructure.DependencyInjection;
 using OrderFlow.Infrastructure.Persistence.Seed;
 using RabbitMQ.Client;
@@ -17,6 +19,9 @@ namespace OrderFlow.Api
         {
 
             var builder = WebApplication.CreateBuilder(args);
+
+
+            builder.Services.AddSingleton<IAuthorizationHandler, RestaurantOwnerAuthorizationHandler>();
 
             builder.Services.AddInfrastructure(builder.Configuration);
 

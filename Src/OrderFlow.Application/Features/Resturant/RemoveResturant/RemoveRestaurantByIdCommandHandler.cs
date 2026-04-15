@@ -1,25 +1,35 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using OrderFlow.Application.Abstractions;
+using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Security.Authorization;
 
 namespace OrderFlow.Application.Features.Resturant.RemoveResturant
 {
-    public class RemoveRestaurantByIdCommandHandler : IRequestHandler<RemoveRestaurantByIdCommand, RemoveRestaurantByIdResponse>
+    public class RemoveRestaurantByIdCommandHandler : IRequestHandler<RemoveRestaurantByIdCommand>
     {
         private readonly IApplicationDbContext _dbContext;
-
-        public RemoveRestaurantByIdCommandHandler(IApplicationDbContext dbContext)
+        private readonly ICurrentUser _currentUser;
+        private readonly IAuthorizationService _authorizationService;
+        public RemoveRestaurantByIdCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
         {
             _dbContext = dbContext;
+            _currentUser = currentUser;
+            _authorizationService = authorizationService;
         }
 
-        public async Task<RemoveRestaurantByIdResponse> Handle(RemoveRestaurantByIdCommand request, CancellationToken cancellationToken)
+        public async Task Handle(RemoveRestaurantByIdCommand request, CancellationToken cancellationToken)
         {
-            var deletedRowsCount = await _dbContext.Restaurants
-                .Where(r => r.Id == request.Id)
-                .ExecuteDeleteAsync(cancellationToken);
+            var restaurant = await _dbContext.Restaurants.FindAsync(new object[] { request.Id }, cancellationToken);
+            if (restaurant == null)
+                throw new KeyNotFoundException("Restaurant not found.");
 
-            return new RemoveRestaurantByIdResponse(Success: deletedRowsCount != 0);
+            var authorizationResult = await _authorizationService.AuthorizeAsync(_currentUser.User, restaurant, new ResourceOwnerRequirement());
+            if (!authorizationResult.Succeeded)
+                throw new UnauthorizedAccessException("You are not allowed to edit this item.");
+
+            _dbContext.Restaurants.Remove(restaurant);
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
 }

@@ -43,7 +43,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles ="Admin,Owner")]
         [ProducesResponseType(typeof(MenuItemDetailsResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> AddMenuItem([FromRoute] Guid restaurantId, [FromBody] AddMenuItemRequest request, CancellationToken cancellationToken)
@@ -55,7 +55,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPatch("{menuItemId:guid}/description")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ChangeMenuItemDescription([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, [FromBody] string? description, CancellationToken cancellationToken)
@@ -66,7 +66,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPatch("{menuItemId:guid}/price")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ChangeMenuItemPrice([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, [FromBody] decimal price, CancellationToken cancellationToken)
@@ -77,7 +77,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPatch("{menuItemId:guid}/available")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> MarkMenuItemAvailable([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
@@ -88,7 +88,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPatch("{menuItemId:guid}/unavailable")]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> MarkMenuItemUnavailable([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
@@ -100,7 +100,7 @@ namespace OrderFlow.Api.Controllers
 
 
         [HttpDelete]
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> DeleteMenuItem([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
