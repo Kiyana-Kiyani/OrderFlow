@@ -2,7 +2,7 @@
 
 namespace OrderFlow.Application.Features.Orders.Common
 {
-    public sealed record OrderDetailsDto(
+    public  record OrderDetailsDto(
         Guid OrderId,
         Guid CustomerUserId,
         Guid RestaurantId,

@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MediatR;
+using OrderFlow.Application.Features.Orders.Common;
 
 namespace OrderFlow.Application.Features.Orders.GetOrderById
 {
-    internal class GetOrderByIdQuery
-    {
-    }
+    public sealed record GetOrderByIdQuery(Guid OrderId) : IRequest<OrderDetailsDto>;
 }

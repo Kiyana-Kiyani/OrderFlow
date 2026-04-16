@@ -11,37 +11,27 @@ namespace OrderFlow.Infrastructure.Authentication
         {
             _httpContextAccessor = httpContextAccessor;
         }
+
+        public ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User ?? throw new UnauthorizedAccessException("User is not authenticated.");
+
+        public bool IsAuthenticated => User.Identity?.IsAuthenticated ?? false;
+
+        public string? Email => User.FindFirstValue(ClaimTypes.Email);
+
         public Guid UserId
         {
             get
             {
-                var user = _httpContextAccessor.HttpContext?.User;
+                var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                var id = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (id is null)
-                    throw new UnauthorizedAccessException("User is not authenticated.");
-
-                return Guid.Parse(id);
+                return Guid.TryParse(userIdString, out var userId) ? userId : Guid.Empty;
             }
         }
 
-        public IReadOnlyList<string> Roles
-        {
-            get
-            {
-                var user = _httpContextAccessor.HttpContext?.User;
-
-                if (user is null)
-                    throw new UnauthorizedAccessException("User is not authenticated.");
-
-               return user.FindAll(ClaimTypes.Role).Select(x => x.Value).ToList();
-            }
-        }
-
-        public ClaimsPrincipal User => _httpContextAccessor.HttpContext?.User ?? throw new UnauthorizedAccessException("User is not authenticated.");
-        //public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User.
+        public IReadOnlyList<string> Roles =>
+            User.FindAll(ClaimTypes.Email)
+            .Select(x => x.Value).
+            ToList().AsReadOnly();
 
     }
-
 }

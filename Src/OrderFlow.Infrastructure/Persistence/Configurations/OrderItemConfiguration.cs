@@ -13,10 +13,8 @@ namespace OrderFlow.Infrastructure.Persistence.Configurations
             builder.Property(oi => oi.MenuItemName).IsRequired().HasMaxLength(100);
             builder.Property(oi => oi.Quantity).IsRequired();
             builder.Property(oi => oi.UnitPrice).HasColumnType("decimal(18,2)");
-            builder.Property(oi => oi.TotalPrice).HasColumnType("decimal(18,2)");
+            builder.Property(oi => oi.LineTotal).HasColumnType("decimal(18,2)");
             builder.Property(oi => oi.CustomerOrderId).IsRequired();
-
-            builder.Ignore(oi => oi.TotalPrice);
 
         }
     }

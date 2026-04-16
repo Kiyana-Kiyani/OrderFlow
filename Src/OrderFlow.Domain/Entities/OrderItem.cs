@@ -16,6 +16,7 @@
             MenuItemId = menuItemId;
             MenuItemName = menuItemName.Trim();
             CustomerOrderId = customerOrderId;
+            LineTotal = quantity * unitPrice;
         }
         private OrderItem() { }
 
@@ -25,7 +26,7 @@
         public string MenuItemName { get; private set; } = default!;
         public int Quantity { get; private set; }
         public decimal UnitPrice { get; private set; }
-        public decimal TotalPrice => Quantity * UnitPrice;
+        public decimal LineTotal { get; private set; }
 
         internal void ChangeQuantity(int quantity)
         {

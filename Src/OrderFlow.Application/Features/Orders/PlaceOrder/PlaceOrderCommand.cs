@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MediatR;
 
 namespace OrderFlow.Application.Features.Orders.PlaceOrder
 {
-    internal class PlaceOrderCommand
-    {
-    }
+    public sealed record PlaceOrderCommand(
+        Guid RestaurantId,
+        List<PlaceOrderItemCommand> Items
+    ) : IRequest<PlaceOrderResponse>;
+
+    public sealed record PlaceOrderItemCommand(
+        Guid MenuItemId,
+        int Quantity
+    );
 }

@@ -8,13 +8,14 @@ namespace OrderFlow.Domain.Entities
 
         private CustomerOrder() { }
 
-        public CustomerOrder(Guid customerUserId, Guid restaurantId)
+        public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName)
         {
             if (customerUserId == Guid.Empty) throw new ArgumentException("Customer is required.", nameof(customerUserId));
             if (restaurantId == Guid.Empty) throw new ArgumentException("Restaurant is required.", nameof(restaurantId));
             Id = Guid.NewGuid();
             CustomerUserId = customerUserId;
             RestaurantId = restaurantId;
+            RestaurantName = restaurantName;
             Status = OrderStatus.Created;
             CreatedAt = DateTime.UtcNow;
 
@@ -23,11 +24,18 @@ namespace OrderFlow.Domain.Entities
         public Guid Id { get; private set; }
         public Guid CustomerUserId { get; private set; }
         public Guid RestaurantId { get; private set; }
+        public string RestaurantName { get; private set; }
         public OrderStatus Status { get; private set; }
         public DateTime CreatedAt { get; private set; }
-        public decimal TotalAmount => _orderItems.Sum(x => x.TotalPrice);
+        public decimal TotalAmount { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
 
+
+
+        private void RecalculateTotalAmount()
+        {
+            TotalAmount = _orderItems.Sum(x => x.LineTotal);
+        }
         public void AddOrderItem(int quantity, decimal unitPrice, Guid menuItemId, string menuItemName)
         {
             EnsureEditable();
@@ -45,6 +53,8 @@ namespace OrderFlow.Domain.Entities
                 var newOrderItem = new OrderItem(quantity, unitPrice, menuItemId, menuItemName, Id);
                 _orderItems.Add(newOrderItem);
             }
+
+            RecalculateTotalAmount();
         }
 
         public void ChangeQuantity(Guid orderItemId, int quantity)
@@ -52,6 +62,7 @@ namespace OrderFlow.Domain.Entities
             EnsureEditable();
             var orderItem = GetItem(orderItemId);
             orderItem.ChangeQuantity(quantity);
+            RecalculateTotalAmount();
         }
        
         public void RemoveItem(Guid orderItemId)
@@ -60,6 +71,7 @@ namespace OrderFlow.Domain.Entities
 
             var item = GetItem(orderItemId);
             _orderItems.Remove(item);
+            RecalculateTotalAmount();
         }
 
         private OrderItem GetItem(Guid orderItemId)
@@ -93,13 +105,8 @@ namespace OrderFlow.Domain.Entities
 
         public void Cancel()
         {
-            if (Status == OrderStatus.Delivered)
-                throw new InvalidOperationException("Delivered orders cannot be cancelled.");
-
-            if (Status == OrderStatus.Cancelled)
-                throw new InvalidOperationException("Order is already cancelled.");
-            if (Status == OrderStatus.OutForDelivery)
-                throw new InvalidOperationException("Orders that are being sent cannot be cancelled.");
+            if (Status != OrderStatus.Created)
+                throw new InvalidOperationException("Only created orders can be Cancel.");
 
             Status = OrderStatus.Cancelled;
         }

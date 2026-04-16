@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using FluentValidation;
 
 namespace OrderFlow.Application.Features.Orders.CancelOrder
 {
-    internal class CancelOrderCommandValidator
+    public class CancelOrderCommandValidator : AbstractValidator<CancelOrderCommand>
     {
+        public CancelOrderCommandValidator()
+        {
+            RuleFor(x => x.OrderId)
+                .NotEmpty();
+        }
     }
 }
