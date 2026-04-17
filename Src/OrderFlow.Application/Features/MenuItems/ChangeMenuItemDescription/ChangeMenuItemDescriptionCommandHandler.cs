@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Application.Security.Authorization;
 
 namespace OrderFlow.Application.Features.MenuItems.ChangeMenuItemDescription
@@ -25,8 +26,8 @@ namespace OrderFlow.Application.Features.MenuItems.ChangeMenuItemDescription
                 .Include(r => r.MenuItems)
                 .FirstOrDefaultAsync(r => r.Id == request.RestaurantId, cancellationToken);
 
-            if (restaurant == null)
-                throw new KeyNotFoundException("Restaurant not found.");
+            if (restaurant is null)
+                throw new NotFoundException("Restaurant", request.RestaurantId);
 
             var authorizationResult = await _authorizationService.AuthorizeAsync(_currentUser.User, restaurant, new ResourceOwnerRequirement());
             if (!authorizationResult.Succeeded)

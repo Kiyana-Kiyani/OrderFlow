@@ -6,10 +6,10 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantName
     {
         public ChangeRestaurantNameValidator()
         {
-            RuleFor(x => x.RestaurantId).NotEmpty();
+            RuleFor(x => x.RestaurantId).NotEmpty().WithMessage("Restaurant Id is Required");
             RuleFor(x => x.NewName)
-                .NotEmpty().WithMessage("نام رستوران نمی‌تواند خالی باشد.")
-                .MaximumLength(100).WithMessage("نام رستوران نمی‌تواند بیشتر از 100 کاراکتر باشد.");
+                .NotEmpty().WithMessage("Resturant Name is required.")
+                .MaximumLength(100).WithMessage("Restaurant name cannot exceed 100 characters.");
         }
     }
 }

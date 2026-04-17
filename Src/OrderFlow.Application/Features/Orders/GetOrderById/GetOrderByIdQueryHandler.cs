@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Application.Features.Orders.Common;
 
 namespace OrderFlow.Application.Features.Orders.GetOrderById
@@ -35,12 +36,12 @@ namespace OrderFlow.Application.Features.Orders.GetOrderById
                         i.Quantity,
                         i.UnitPrice,
                         i.LineTotal
-                             )).ToList()
+                       )).ToList()
                   ))
                  .FirstOrDefaultAsync(cancellationToken);
 
-            if (order == null)
-                throw new KeyNotFoundException("Order not found or you do not have permission to view it.");
+            if (order is null)
+                throw new NotFoundException("Order", request.OrderId);
 
             return order;
 

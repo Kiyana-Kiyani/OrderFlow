@@ -6,8 +6,8 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantAddress
     {
         public ChangeRestaurantAddressValidator()
         {
-            RuleFor(x => x.RestaurantId).NotEmpty();
-            RuleFor(x => x.NewAddress).NotEmpty().MaximumLength(200);
+            RuleFor(x => x.RestaurantId).NotEmpty().WithMessage("Restaurant Id is Required");
+            RuleFor(x => x.NewAddress).NotEmpty().MaximumLength(200).WithMessage("Address cannot exceed 200 characters.");
         }
     }
 }

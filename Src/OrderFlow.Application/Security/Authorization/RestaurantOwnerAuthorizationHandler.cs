@@ -15,14 +15,12 @@ namespace OrderFlow.Application.Security.Authorization
                 return Task.CompletedTask;
             }
 
-
             var userIdString = context.User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdString is null)
                 return Task.CompletedTask;
 
             if (Guid.TryParse(userIdString.Value, out var userGuid) && userGuid == resource.OwnerUserId)
                 context.Succeed(requirement);
-            
 
             return Task.CompletedTask;
         }

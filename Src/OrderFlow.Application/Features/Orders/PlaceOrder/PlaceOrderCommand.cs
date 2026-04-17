@@ -6,9 +6,4 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
         Guid RestaurantId,
         List<PlaceOrderItemCommand> Items
     ) : IRequest<PlaceOrderResponse>;
-
-    public sealed record PlaceOrderItemCommand(
-        Guid MenuItemId,
-        int Quantity
-    );
 }

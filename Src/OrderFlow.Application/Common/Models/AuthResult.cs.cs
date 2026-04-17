@@ -2,11 +2,12 @@
 {
     public class AuthResult
     {
-        public bool Succeeded { get; set; }
-        public string? Error { get; set; }
-        public string? Token { get; set; }
-        public Guid? UserId { get; set; }
+        public bool Succeeded { get; private set; }
+        public string? Error { get; private set; }
+        public string? Token { get; private set; } 
+        public Guid? UserId { get; private set; } 
 
+        private AuthResult() { }
         public static AuthResult Success(string token, Guid userId)
         {
             return new AuthResult

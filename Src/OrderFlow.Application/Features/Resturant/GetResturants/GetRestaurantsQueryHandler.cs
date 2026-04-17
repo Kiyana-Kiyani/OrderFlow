@@ -15,7 +15,7 @@ namespace OrderFlow.Application.Features.Resturant.GetResturants
 
         public async Task<IReadOnlyList<GetRestaurantsResponse>> Handle(GetRestaurantsQuery request, CancellationToken cancellationToken)
         {
-          var result = await _context.Restaurants
+          var restaurants = await _context.Restaurants
             .Select(r => new GetRestaurantsResponse
             (
                 r.Id,
@@ -25,7 +25,7 @@ namespace OrderFlow.Application.Features.Resturant.GetResturants
                 r.IsActive
             )).ToListAsync(cancellationToken);
 
-            return result;
+            return restaurants;
         }
     }
 }

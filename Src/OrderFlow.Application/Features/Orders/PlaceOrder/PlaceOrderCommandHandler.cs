@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Domain.Entities;
 
 namespace OrderFlow.Application.Features.Orders.PlaceOrder
@@ -19,17 +20,14 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
         {
-
-
             var restaurant = _dbContext.Restaurants.AsNoTracking()
                 .FirstOrDefault(r => r.Id == request.RestaurantId && r.IsActive);
 
             if (restaurant is null)
-                throw new ArgumentException("Restaurant doesnt exict");
-
+                throw new NotFoundException("Restaurant", request.RestaurantId);
 
             if (!restaurant.IsActive)
-                throw new ArgumentException("Restaurant isnt active");
+                throw new ConflictException("Restaurant is not active");
 
             var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name);
 
@@ -41,16 +39,16 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
 
 
             if (menuItems.Count != menuItemIds.Count)
-                throw new ArgumentException("One or more menu items do not exist.");
+                throw new NotFoundException("One or more menu items do not exist.");
 
             if (menuItems.Any(m => !m.IsAvailable))
-                throw new ArgumentException("One or more menu items are not available.");
+                throw new ConflictException("One or more menu items are not available.");
 
             foreach (var item in request.Items)
             {
                 var price = menuItems.Where(x => x.Id == item.MenuItemId).Select(x => x.Price).FirstOrDefault();
                 var name = menuItems.Where(x => x.Id == item.MenuItemId).Select(x => x.Name).FirstOrDefault();
-                order.AddOrderItem(item.Quantity, price, item.MenuItemId, name );
+                order.AddOrderItem(item.Quantity, price, item.MenuItemId, name);
             }
 
             await _dbContext.SaveChangesAsync(cancellationToken);

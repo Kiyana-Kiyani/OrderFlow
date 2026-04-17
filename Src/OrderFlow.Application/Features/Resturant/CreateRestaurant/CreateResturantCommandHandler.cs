@@ -28,7 +28,6 @@ namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return new CreateRestaurantResponse(restaurant.Id);
-
         }
     }
 }

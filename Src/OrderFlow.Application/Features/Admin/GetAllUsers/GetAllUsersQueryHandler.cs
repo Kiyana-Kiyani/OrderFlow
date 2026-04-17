@@ -20,7 +20,7 @@ namespace OrderFlow.Application.Features.Admin.GetAllUsers
                 x.Email,
                 x.UserName,
                 x.Roles))
-            .ToList();
+            .ToList().AsReadOnly();
 
         }
     }

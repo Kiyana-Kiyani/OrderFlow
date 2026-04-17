@@ -24,8 +24,6 @@ namespace OrderFlow.Application.Features.MenuItems.GetMenuItems
                        x.Price,
                        x.IsAvailable
                    )).ToListAsync(cancellationToken);
-            if (items.Any())
-                throw new InvalidOperationException("No menu items found for the specified restaurant.");
 
             return items;
         }

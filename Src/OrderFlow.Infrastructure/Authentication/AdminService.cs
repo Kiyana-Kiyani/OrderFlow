@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Application.Features.Admin.Common;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Persistence;
@@ -25,11 +26,11 @@ namespace OrderFlow.Infrastructure.Authentication
             var user = await _userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
-                throw new Exception("User not found.");
+                throw new NotFoundException("User",userId);
 
             var roleExists = await _roleManager.RoleExistsAsync(role);
             if (!roleExists)
-                throw new Exception("Role does not exist.");
+                throw new NotFoundException("Role", role);
 
             if (await _userManager.IsInRoleAsync(user, role))
                 return;
@@ -38,16 +39,17 @@ namespace OrderFlow.Infrastructure.Authentication
             if (!result.Succeeded)
                 throw new InvalidOperationException(string.Join("; ", result.Errors.Select(x => x.Description)));
         }
+
         public async Task RemoveRoleFromUserAsync(Guid userId, string role, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
-                throw new Exception("User not found.");
+                throw new NotFoundException("User", userId);
 
             var roleExists = await _roleManager.RoleExistsAsync(role);
             if (!roleExists)
-                throw new Exception("Role does not exist.");
+                throw new NotFoundException("Role", role);
 
             var result = await _userManager.RemoveFromRoleAsync(user, role);
             if (!result.Succeeded)
@@ -57,7 +59,6 @@ namespace OrderFlow.Infrastructure.Authentication
         public async Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken)
         {
             var users = await _dbContext.Users
-                .AsNoTracking()
                 .OrderBy(x => x.Email)
                 .Select(x => new AdminUserDto
                 (
@@ -68,13 +69,13 @@ namespace OrderFlow.Infrastructure.Authentication
                         .Join(_dbContext.Roles,
                             uri => uri.RoleId,
                             r => r.Id,
-                            (uri, r) => r.Name).ToList()
+                            (uri, r) => r.Name!).ToList()
 
                 )).ToListAsync(cancellationToken);
 
             return users;
-
         }
+
         public async Task<AdminUserDetailsDto> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken)
         {
             var user = await _userManager.Users
@@ -82,7 +83,7 @@ namespace OrderFlow.Infrastructure.Authentication
                       .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
             if (user is null)
-                return null;
+                throw new NotFoundException("User", userId);
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -92,13 +93,12 @@ namespace OrderFlow.Infrastructure.Authentication
                 user.UserName ?? string.Empty,
                 user.EmailConfirmed,
                 roles.ToList());
-
         }
 
-        public async Task<IReadOnlyList<string>> GetAllRolesAsync(CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<string?>> GetAllRolesAsync(CancellationToken cancellationToken)
         {
             var roles = await _dbContext.Roles.Select(x => x.Name).ToListAsync();
-            return roles;
+            return roles.AsReadOnly();
         }
     }
 }

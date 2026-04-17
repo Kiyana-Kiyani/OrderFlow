@@ -7,7 +7,7 @@ namespace OrderFlow.Application.Features.Resturant.DeactivateRestaurant
         public DeactivateRestaurantValidator()
         {
             RuleFor(x => x.RestaurantId)
-                .NotEmpty().WithMessage("آیدی رستوران نامعتبر است.");
+                .NotEmpty().WithMessage("Restaurant Id is not valid");
         }
     }
 }

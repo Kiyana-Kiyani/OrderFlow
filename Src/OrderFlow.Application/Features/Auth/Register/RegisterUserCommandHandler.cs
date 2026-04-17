@@ -1,9 +1,10 @@
 ﻿using MediatR;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Common.Models;
 
 namespace OrderFlow.Application.Features.Auth.Register
 {
-    public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, RegisterUserResponse>
+    public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, AuthResult>
     {
         private readonly IAuthService _authService;
 
@@ -11,20 +12,9 @@ namespace OrderFlow.Application.Features.Auth.Register
         {
             _authService = authService;
         }
-
-        public async Task<RegisterUserResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+        public async Task<AuthResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RegisterAsync(request.Email, request.Password, cancellationToken);
-
-            if (!result.Succeeded || result.UserId is null || string.IsNullOrEmpty(result.Token))
-                throw new InvalidOperationException(result.Error ?? "Registration failed.");
-
-            var response = new RegisterUserResponse(
-                UserId: result.UserId.Value,
-                Token: result.Token
-                );
-
-            return response;
+            return await _authService.RegisterAsync(request.Email, request.Password, cancellationToken);
         }
     }
 }

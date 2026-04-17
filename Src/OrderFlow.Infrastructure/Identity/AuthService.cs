@@ -27,7 +27,7 @@ namespace OrderFlow.Infrastructure.Identity
             {
                 Id = Guid.NewGuid(),
                 Email = email,
-                 UserName = email
+                UserName = email
              };
 
             var createResult = await _userManager.CreateAsync(user, password);

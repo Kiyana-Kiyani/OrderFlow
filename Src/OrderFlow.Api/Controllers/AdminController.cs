@@ -6,8 +6,6 @@ using OrderFlow.Application.Features.Admin.GetAllRols;
 using OrderFlow.Application.Features.Admin.GetAllUsers;
 using OrderFlow.Application.Features.Admin.GetUserById;
 using OrderFlow.Application.Features.Admin.RemoveRoleFromUser;
-using OrderFlow.Application.Features.Resturant.ActivateRestaurant;
-using OrderFlow.Application.Features.Resturant.DeactivateRestaurant;
 
 namespace OrderFlow.Api.Controllers
 {
@@ -54,7 +52,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> AssignRoleToUser(Guid userId, [FromBody] string role, CancellationToken cancellationToken)
         {
-            await _sender.Send( new AssignRoleToUserCommand(userId, role), cancellationToken);
+            await _sender.Send(new AssignRoleToUserCommand(userId, role), cancellationToken);
 
             return NoContent();
         }
@@ -63,7 +61,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> RemoveRoleFromUser([FromRoute] Guid userId, [FromRoute] string role, CancellationToken cancellationToken)
         {
-            await _sender.Send(new RemoveRoleFromUserCommand(userId, role),cancellationToken);
+            await _sender.Send(new RemoveRoleFromUserCommand(userId, role), cancellationToken);
 
             return NoContent();
         }

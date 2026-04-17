@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
+using OrderFlow.Application.Common.Exceptions;
 
 namespace OrderFlow.Application.Features.MenuItems.GetMenuItemById
 {
@@ -28,8 +29,8 @@ namespace OrderFlow.Application.Features.MenuItems.GetMenuItemById
                       x.IsAvailable
                   )).FirstOrDefaultAsync(cancellationToken);
 
-            if (menuItem == null)
-                throw new InvalidOperationException("Menu item not found.");
+            if (menuItem is null)
+                throw new NotFoundException("MenuItem", request.MenuItemId);
 
             return menuItem;
         }

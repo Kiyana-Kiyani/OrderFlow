@@ -15,8 +15,6 @@ namespace OrderFlow.Application.Features.Admin.AssignRoleToUser
         public async Task Handle(AssignRoleToUserCommand request, CancellationToken cancellationToken)
         {
             await _adminService.AssignRoleToUserAsync(request.UserId, request.Role, cancellationToken);
-
-
         }
     }
 }

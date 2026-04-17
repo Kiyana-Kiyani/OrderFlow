@@ -15,7 +15,6 @@ namespace OrderFlow.Application.Features.Admin.GetUserById
         public async Task<GetUserByIdResponse> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
         {
             var user = await _adminService.GetUserByIdAsync(request.UserId, cancellationToken);
-            if (user == null) throw new InvalidOperationException("User not found.");
 
             return new GetUserByIdResponse(
                 user.UserId,

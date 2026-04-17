@@ -19,18 +19,27 @@ namespace OrderFlow.Api.Controllers
 
         [HttpPost("register")]
         [ProducesResponseType(typeof(RegisterUserResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType( StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterUserCommand command, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(command, cancellationToken);
-            return Ok(result);
+            if (!result.Succeeded)
+                return BadRequest(new { Message = result.Error });
+
+            return Ok(new RegisterUserResponse(result.UserId!.Value, result.Token!));
         }
 
         [HttpPost("login")]
         [ProducesResponseType(typeof(LoginUserResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType( StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginUserCommand command, CancellationToken cancellationToken)
         {
             var result = await _sender.Send(command, cancellationToken);
-            return Ok(result);
+            if (!result.Succeeded) 
+                return Unauthorized(new { Message  = result.Error});
+
+
+            return Ok(new LoginUserResponse(result.UserId!.Value ,result.Token!));
         }
     }
 }

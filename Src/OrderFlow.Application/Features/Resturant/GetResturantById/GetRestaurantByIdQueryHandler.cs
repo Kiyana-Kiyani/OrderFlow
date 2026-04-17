@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
+using OrderFlow.Application.Common.Exceptions;
 
 namespace OrderFlow.Application.Features.Resturant.GetResturantById
 {
@@ -15,7 +16,7 @@ namespace OrderFlow.Application.Features.Resturant.GetResturantById
 
         public async Task<GetRestaurantByIdResponse> Handle(GetRestaurantByIdQuery query, CancellationToken cancellationToken)
         {
-            var result = await _dbContext.Restaurants
+            var restaurant = await _dbContext.Restaurants
                 .Where(x => x.Id == query.Id)
                 .Select(x => new GetRestaurantByIdResponse(
                     x.Id,
@@ -25,11 +26,10 @@ namespace OrderFlow.Application.Features.Resturant.GetResturantById
                     x.IsActive))
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (result is null)
-            {
-                throw new KeyNotFoundException($"Restaurant with Id {query.Id} not found.");
-            }
-            return result;
+            if (restaurant is null)
+                throw new NotFoundException("Restaurant", query.Id);
+
+            return restaurant;
 
         }
     }

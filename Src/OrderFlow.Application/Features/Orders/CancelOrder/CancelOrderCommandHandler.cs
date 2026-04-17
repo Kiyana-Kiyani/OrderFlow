@@ -2,12 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OrderFlow.Application.Common.Exceptions;
 
 namespace OrderFlow.Application.Features.Orders.CancelOrder
 {
@@ -29,10 +24,10 @@ namespace OrderFlow.Application.Features.Orders.CancelOrder
                       .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
 
             if (order is null)
-                throw new Exception("Order not found.");
+                throw new NotFoundException("Order", request.OrderId);
 
             if (order.CustomerUserId != _currentUser.UserId)
-                throw new Exception("You are not allowed to cancel this order.");
+                throw new UnauthorizedAccessException("You are not allowed to edit this item.");
 
             order.Cancel();
 

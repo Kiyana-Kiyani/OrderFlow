@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using OrderFlow.Application.Common.Models;
 
 namespace OrderFlow.Application.Features.Auth.Register
 {
@@ -6,6 +7,6 @@ namespace OrderFlow.Application.Features.Auth.Register
     (
         string Email,
         string Password
-        ) : IRequest<RegisterUserResponse>;
+        ) : IRequest<AuthResult>;
 
 }
