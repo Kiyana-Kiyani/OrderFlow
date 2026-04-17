@@ -1,4 +1,6 @@
-﻿namespace OrderFlow.Domain.Entities
+﻿using OrderFlow.Domain.Exceptions.OrderItem;
+
+namespace OrderFlow.Domain.Entities
 {
     public class OrderItem
     {
@@ -31,7 +33,7 @@
         internal void ChangeQuantity(int quantity)
         {
             if (quantity <= 0)
-                throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+                throw new NegativeOrZeroQuantityException(quantity);
 
             Quantity = quantity;
         }

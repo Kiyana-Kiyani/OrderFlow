@@ -1,4 +1,5 @@
 ﻿using OrderFlow.Domain.Enums;
+using OrderFlow.Domain.Exceptions.CustomerOrder;
 
 namespace OrderFlow.Domain.Entities
 {
@@ -7,7 +8,6 @@ namespace OrderFlow.Domain.Entities
         private readonly List<OrderItem> _orderItems = new();
 
         private CustomerOrder() { }
-
         public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName)
         {
             if (customerUserId == Guid.Empty) throw new ArgumentException("Customer is required.", nameof(customerUserId));
@@ -29,7 +29,6 @@ namespace OrderFlow.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public decimal TotalAmount { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
-
 
 
         private void RecalculateTotalAmount()
@@ -57,13 +56,13 @@ namespace OrderFlow.Domain.Entities
             RecalculateTotalAmount();
         }
 
-        public void ChangeQuantity(Guid orderItemId, int quantity)
-        {
-            EnsureEditable();
-            var orderItem = GetItem(orderItemId);
-            orderItem.ChangeQuantity(quantity);
-            RecalculateTotalAmount();
-        }
+        //private void ChangeQuantity(Guid orderItemId, int quantity)
+        //{
+        //    EnsureEditable();
+        //    var orderItem = GetItem(orderItemId);
+        //    orderItem.ChangeQuantity(quantity);
+        //    RecalculateTotalAmount();
+        //}
        
         public void RemoveItem(Guid orderItemId)
         {
@@ -77,20 +76,20 @@ namespace OrderFlow.Domain.Entities
         private OrderItem GetItem(Guid orderItemId)
         {
             var item = _orderItems.FirstOrDefault(x => x.Id == orderItemId);
-            if (item == null) throw new ArgumentException("Order item not found.", nameof(orderItemId));
+            if (item == null) throw new OrderItemNotFoundException(orderItemId);
             return item;
         }
         private void EnsureEditable()
         {
             if (Status != OrderStatus.Created)
-                throw new InvalidOperationException("Order items can only be changed while order is in Created status.");
+                throw new OrderStateException("Order items can only be changed while order is in Created status.");
         }
 
         public void Accept()
         {
 
             if (Status != OrderStatus.Created)
-                throw new InvalidOperationException("Only created orders can be accepted.");
+                throw new OrderStateException("Only created orders can be accepted.");
 
             Status = OrderStatus.Accepted;
 
@@ -99,14 +98,14 @@ namespace OrderFlow.Domain.Entities
         public void Reject()
         {
             if (Status != OrderStatus.Created)
-                throw new InvalidOperationException("Only created orders can be rejected.");
+                throw new OrderStateException("Only created orders can be rejected.");
             Status = OrderStatus.Rejected;
         }
 
         public void Cancel()
         {
             if (Status != OrderStatus.Created)
-                throw new InvalidOperationException("Only created orders can be Cancel.");
+                throw new OrderStateException("Only created orders can be Canceled.");
 
             Status = OrderStatus.Cancelled;
         }
@@ -114,14 +113,14 @@ namespace OrderFlow.Domain.Entities
         public void Dispatch()
         {
             if (Status != OrderStatus.Accepted)
-                throw new InvalidOperationException("Only accepted orders can be sent.");
+                throw new OrderStateException("Only accepted orders can be sent.");
             Status = OrderStatus.OutForDelivery;
         }
 
         public void Deliver()
         {
             if (Status != OrderStatus.OutForDelivery)
-                throw new InvalidOperationException("Only orders that are being sent can be marked as delivered.");
+                throw new OrderStateException("Only orders that are being sent can be marked as delivered.");
             Status = OrderStatus.Delivered;
         }
 

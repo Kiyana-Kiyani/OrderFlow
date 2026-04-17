@@ -1,4 +1,6 @@
-﻿namespace OrderFlow.Domain.Entities
+﻿using OrderFlow.Domain.Exceptions.Restauramt;
+
+namespace OrderFlow.Domain.Entities
 {
     public class Restaurant
     {
@@ -16,23 +18,21 @@
             CreatedAtUtc = DateTime.UtcNow;
             Description = NormalizeOptional(description);
         }
-        private Restaurant(){ }
+        private Restaurant() { }
 
         public Guid Id { get; private set; }
-        public string Name { get; private set; } = default!; 
+        public string Name { get; private set; } = default!;
         public string Address { get; private set; } = default!;
         public string? Description { get; private set; }
-        public bool IsActive { get; private set; } 
+        public bool IsActive { get; private set; }
         public Guid OwnerUserId { get; private set; }
-        public DateTime CreatedAtUtc { get; private set; } 
+        public DateTime CreatedAtUtc { get; private set; }
         public IReadOnlyCollection<MenuItem> MenuItems => _menuItems.AsReadOnly();
-
-
 
         public void ChangeName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Restaurant name is required.", nameof(name));
-            Name = name.Trim();        
+            Name = name.Trim();
         }
         public void ChangeAddress(string address)
         {
@@ -41,16 +41,13 @@
         }
         public void Deactivate() => IsActive = false;
         public void Activate() => IsActive = true;
-
         public void ChangeDescription(string? description) => Description = NormalizeOptional(description);
-
-
         public Guid AddMenuItem(string name, decimal price, string? description = null)
         {
             EnsureRestaurantIsActive();
 
             if (_menuItems.Any(x => x.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException("A menu item with the same name already exists in this restaurant.");
+                throw new DuplicateMenuItemException(name);
 
             var item = new MenuItem(name, price, Id, description);
             _menuItems.Add(item);
@@ -59,14 +56,14 @@
         private void EnsureRestaurantIsActive()
         {
             if (!IsActive)
-                throw new InvalidOperationException("Inactive restaurant cannot manage menu items.");
+                throw new RestaurantInactiveException();
         }
 
         private MenuItem GetMenuItem(Guid menuItemId)
         {
             var item = _menuItems.FirstOrDefault(x => x.Id == menuItemId);
             if (item is null)
-                throw new InvalidOperationException("Menu item was not found.");
+                throw new MenuItemNotFoundException(menuItemId);
 
             return item;
         }
@@ -75,16 +72,14 @@
         {
             var item = GetMenuItem(menuItemId);
 
-            if (_menuItems.Any(x =>
-                    x.Id != menuItemId &&
+            if (_menuItems.Any(x => x.Id != menuItemId &&
                     x.Name.Equals(newName.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
-                throw new InvalidOperationException("A menu item with the same name already exists in this restaurant.");
+                throw new DuplicateMenuItemException(newName);
             }
 
             item.ChangeName(newName);
         }
-        
         public void ChangeMenuItemDescription(Guid menuItemId, string? newDescription)
         {
             var item = GetMenuItem(menuItemId);
@@ -118,6 +113,5 @@
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
-
     }
 }
