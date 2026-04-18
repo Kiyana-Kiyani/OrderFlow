@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using OrderFlow.Application.Common.Exceptions;
 using System.Net;
 
@@ -24,137 +23,25 @@ namespace OrderFlow.Api.Middleware
             }
             catch (Exception ex)
             {
-
-
-                if(ex is ValidationException)
+                var statusCode = switch (ex)
                 {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
+                    ValidationException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    NotFoundException => CreateResponse(ex, context, (int)HttpStatusCode.NotFound),
+                    ConflictException => CreateResponse(ex, context, (int)HttpStatusCode.Conflict),
+                    ForbiddenException => CreateResponse(ex, context, (int)HttpStatusCode.Forbidden),
+                    DomainException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    ArgumentNullException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    ArgumentException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    ArgumentOutOfRangeException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    KeyNotFoundException => CreateResponse(ex, context, (int)HttpStatusCode.NotFound),
+                    UnauthorizedAccessException => CreateResponse(ex, context, (int)HttpStatusCode.Unauthorized),
+                    InvalidOperationException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
+                    _ => CreateResponse(ex, context, (int)HttpStatusCode.InternalServerError)
 
-                    };
-                }
-                else if(ex is NotFoundException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
+                };
 
-                    };
-                }
-                else if(ex is NotFoundException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is KeyNotFoundException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is UnauthorizedAccessException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is ForbiddenException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is ConflictException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is ArgumentNullException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is ArgumentOutOfRangeException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else if(ex is InvalidOperationException)
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-                else 
-                {
-                    var pronblemDetail = new ProblemDetails()
-                    {
-                        Detail = ex.Message,
-                        Status = (int)HttpStatusCode.BadRequest,
-                        Title = "Validation Failed",
-                        Instance = context.Request.Path
-
-                    };
-                }
-
-
-
-
-
-
-            }
-
+             }
         }
     }
 }
+

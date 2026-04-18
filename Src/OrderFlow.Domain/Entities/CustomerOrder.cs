@@ -18,7 +18,6 @@ namespace OrderFlow.Domain.Entities
             RestaurantName = restaurantName;
             Status = OrderStatus.Created;
             CreatedAt = DateTime.UtcNow;
-
         }
 
         public Guid Id { get; private set; }
