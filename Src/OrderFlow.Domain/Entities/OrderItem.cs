@@ -6,8 +6,8 @@ namespace OrderFlow.Domain.Entities
     {
         internal OrderItem(int quantity, decimal unitPrice, Guid menuItemId, string menuItemName, Guid customerOrderId)
         {
-            if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
-            if (unitPrice <= 0) throw new ArgumentOutOfRangeException(nameof(unitPrice), "Unit price must be greater than zero.");
+            if (quantity <= 0) throw new NegativeOrZeroQuantityException(quantity);
+            if (unitPrice <= 0) throw new NegativeOrZeroQuantityException(unitPrice);
             if (menuItemId == Guid.Empty) throw new ArgumentException("Menu item is required.", nameof(menuItemId));
             if (customerOrderId == Guid.Empty) throw new ArgumentException("Customer order is required.", nameof(customerOrderId));
             if (string.IsNullOrWhiteSpace(menuItemName))

@@ -26,9 +26,6 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             if (restaurant is null)
                 throw new NotFoundException("Restaurant", request.RestaurantId);
 
-            if (!restaurant.IsActive)
-                throw new ConflictException("Restaurant is not active");
-
             var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name);
 
             var menuItemIds = request.Items.Select(c => c.MenuItemId).Distinct().ToList();
@@ -44,13 +41,15 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             if (menuItems.Any(m => !m.IsAvailable))
                 throw new ConflictException("One or more menu items are not available.");
 
+            var menuItemDict = menuItems.ToDictionary(x => x.Id);
+
+
             foreach (var item in request.Items)
             {
-                var price = menuItems.Where(x => x.Id == item.MenuItemId).Select(x => x.Price).FirstOrDefault();
-                var name = menuItems.Where(x => x.Id == item.MenuItemId).Select(x => x.Name).FirstOrDefault();
-                order.AddOrderItem(item.Quantity, price, item.MenuItemId, name);
+                if (menuItemDict.TryGetValue(item.MenuItemId, out var menuItem))
+                    order.AddOrderItem(item.Quantity, menuItem.Price, item.MenuItemId, menuItem.Name);
             }
-
+            await _dbContext.CustomerOrders.AddAsync(order);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);

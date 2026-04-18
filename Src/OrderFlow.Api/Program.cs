@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
+using OrderFlow.Api.Middleware;
 using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
 using OrderFlow.Application.Security.Authorization;
@@ -100,6 +101,9 @@ namespace OrderFlow.Api
                 );
 
             var app = builder.Build();
+
+            app.UseMiddleware<GlobalExceptionMiddleware>();
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -109,13 +113,10 @@ namespace OrderFlow.Api
                 await IdentityDataSeeder.AdminSeederAsync(app.Services);
             }
 
-
             app.UseHttpsRedirection();
-
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
-
 
             app.MapHealthChecks("/health/live", new HealthCheckOptions
             {

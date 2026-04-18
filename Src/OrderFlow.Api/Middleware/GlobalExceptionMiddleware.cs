@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using OrderFlow.Application.Common.Exceptions;
+﻿
 using System.Net;
+using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
+using OrderFlow.Application.Common.Exceptions;
+using OrderFlow.Domain.Exceptions;
 
 namespace OrderFlow.Api.Middleware
 {
@@ -23,24 +26,58 @@ namespace OrderFlow.Api.Middleware
             }
             catch (Exception ex)
             {
-                var statusCode = switch (ex)
-                {
-                    ValidationException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    NotFoundException => CreateResponse(ex, context, (int)HttpStatusCode.NotFound),
-                    ConflictException => CreateResponse(ex, context, (int)HttpStatusCode.Conflict),
-                    ForbiddenException => CreateResponse(ex, context, (int)HttpStatusCode.Forbidden),
-                    DomainException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    ArgumentNullException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    ArgumentException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    ArgumentOutOfRangeException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    KeyNotFoundException => CreateResponse(ex, context, (int)HttpStatusCode.NotFound),
-                    UnauthorizedAccessException => CreateResponse(ex, context, (int)HttpStatusCode.Unauthorized),
-                    InvalidOperationException => CreateResponse(ex, context, (int)HttpStatusCode.BadRequest),
-                    _ => CreateResponse(ex, context, (int)HttpStatusCode.InternalServerError)
+                var traceId = context.TraceIdentifier;
+                _logger.LogError(ex, "An unhandled exception occurred. TraceId: {TraceId}, Path: {Path}",
+                        traceId, context.Request.Path);
 
+                var statusCode = ex switch
+                {
+                    ValidationException or
+                    DomainException or
+                    ArgumentException or
+                    InvalidOperationException => HttpStatusCode.BadRequest,
+
+                    NotFoundException or
+                    KeyNotFoundException => HttpStatusCode.NotFound,
+
+                    ConflictException => HttpStatusCode.Conflict,
+
+                    ForbiddenException or
+                    UnauthorizedAccessException => HttpStatusCode.Forbidden,
+
+                    _ => HttpStatusCode.InternalServerError
                 };
 
-             }
+                var detail = statusCode == HttpStatusCode.InternalServerError
+                     ? "An unexpected error occurred on the server."
+                     : ex.Message;
+
+                var pd = new ProblemDetails()
+                {
+                    Status = (int)statusCode,
+                    Instance = context.Request.Path,
+                    Detail = detail,
+                    Title = GetTitle(statusCode),
+                };
+
+                pd.Extensions["traceId"] = traceId;
+
+                context.Response.StatusCode = (int)statusCode;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(pd);
+            }
+        }
+        private string GetTitle(HttpStatusCode statusCode)
+        {
+            return statusCode switch
+            {
+                HttpStatusCode.BadRequest => "Bad Request",
+                HttpStatusCode.NotFound => "Not Found",
+                HttpStatusCode.Conflict => "Conflict",
+                HttpStatusCode.Forbidden => "Forbidden",
+                HttpStatusCode.InternalServerError => "Server Error",
+                _ => "An error occurred"
+            };
         }
     }
 }

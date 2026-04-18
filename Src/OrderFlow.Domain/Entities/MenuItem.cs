@@ -8,7 +8,7 @@ namespace OrderFlow.Domain.Entities
         internal MenuItem(string name, decimal price, Guid restaurantId, string? description)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required", nameof(name));
-            if (price <= 0) throw new ArgumentOutOfRangeException(nameof(price), "Price must be greater than zero.");
+            if (price <= 0) throw new NegativeOrZeroPriceException(price);
             Name = name.Trim();
             Id = Guid.NewGuid();
             Description = NormalizeOptional(description);
