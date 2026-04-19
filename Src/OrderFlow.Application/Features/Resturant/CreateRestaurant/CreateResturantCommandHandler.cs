@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Domain.Entities;
 
@@ -7,10 +8,12 @@ namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
     public class CreateResturantCommandHandler : IRequestHandler<CreateRestaurantCommand, CreateRestaurantResponse>
     {
         private readonly IApplicationDbContext _dbContext;
+        private readonly ILogger<CreateResturantCommandHandler> _logger;
 
-        public CreateResturantCommandHandler(IApplicationDbContext dbContext)
+        public CreateResturantCommandHandler(IApplicationDbContext dbContext, ILogger<CreateResturantCommandHandler> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
         }
 
         public async Task<CreateRestaurantResponse> Handle(CreateRestaurantCommand request, CancellationToken cancellationToken)
@@ -26,7 +29,8 @@ namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
             _dbContext.Restaurants.Add(restaurant);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-
+            _logger.LogInformation("Restaurant {RestaurantId} ('{RestaurantName}') created successfully. Owner: {OwnerId}.",
+                 restaurant.Id, restaurant.Name, restaurant.OwnerUserId);
             return new CreateRestaurantResponse(restaurant.Id);
         }
     }

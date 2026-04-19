@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -15,12 +16,16 @@ namespace OrderFlow.Application.Features.MenuItems.MarkMenuItemAvailable
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly IAuthorizationService _authorizationService;
+        private readonly ILogger<MarkMenuItemAvailableCommandHandler> _logger;
 
-        public MarkMenuItemAvailableCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+
+        public MarkMenuItemAvailableCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+            IAuthorizationService authorizationService, ILogger<MarkMenuItemAvailableCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _authorizationService = authorizationService;
+            _logger = logger;
         }
 
         public async Task Handle(MarkMenuItemAvailableCommand request, CancellationToken cancellationToken)
@@ -40,6 +45,8 @@ namespace OrderFlow.Application.Features.MenuItems.MarkMenuItemAvailable
             restaurant.MarkMenuItemAvailable(request.MenuItemId);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("MenuItem {MenuItemId} in restaurant {RestaurantId} marked as AVAILABLE by user {UserId}.",
+                 request.MenuItemId, restaurant.Id, _currentUser.UserId);
         }
     }
 }

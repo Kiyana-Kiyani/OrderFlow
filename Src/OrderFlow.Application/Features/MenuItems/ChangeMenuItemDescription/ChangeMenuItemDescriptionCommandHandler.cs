@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -13,11 +14,15 @@ namespace OrderFlow.Application.Features.MenuItems.ChangeMenuItemDescription
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly IAuthorizationService _authorizationService;
-        public ChangeMenuItemDescriptionCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+        private readonly ILogger<ChangeMenuItemDescriptionCommandHandler> _logger;
+
+        public ChangeMenuItemDescriptionCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+            IAuthorizationService authorizationService, ILogger<ChangeMenuItemDescriptionCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _authorizationService = authorizationService;
+            _logger = logger;
         }
 
         public async Task Handle(ChangeMenuItemDescriptionCommand request, CancellationToken cancellationToken)
@@ -36,6 +41,8 @@ namespace OrderFlow.Application.Features.MenuItems.ChangeMenuItemDescription
             restaurant.ChangeMenuItemDescription(request.MenuItemId, request.Description);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Description of MenuItem {MenuItemId} in restaurant {RestaurantId} updated by user {UserId}.",
+                 request.MenuItemId, restaurant.Id, _currentUser.UserId);
         }
     }
 }

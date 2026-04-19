@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -12,11 +13,15 @@ namespace OrderFlow.Application.Features.Resturant.RemoveResturant
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly IAuthorizationService _authorizationService;
-        public RemoveRestaurantByIdCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+        private readonly ILogger<RemoveRestaurantByIdCommandHandler> _logger;
+
+        public RemoveRestaurantByIdCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+            IAuthorizationService authorizationService, ILogger<RemoveRestaurantByIdCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _authorizationService = authorizationService;
+            _logger = logger;
         }
 
         public async Task Handle(RemoveRestaurantByIdCommand request, CancellationToken cancellationToken)
@@ -31,6 +36,9 @@ namespace OrderFlow.Application.Features.Resturant.RemoveResturant
 
             _dbContext.Restaurants.Remove(restaurant);
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Restaurant {RestaurantId} ('{RestaurantName}') was permanently removed by User {UserId}.",
+                restaurant.Id, restaurant.Name, _currentUser.UserId);
         }
     }
 }

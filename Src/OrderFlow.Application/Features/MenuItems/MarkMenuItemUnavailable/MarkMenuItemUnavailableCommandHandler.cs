@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -13,12 +14,16 @@ public class MarkMenuItemUnavailableCommandHandler : IRequestHandler<MarkMenuIte
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
     private readonly IAuthorizationService _authorizationService;
+    private readonly ILogger<MarkMenuItemUnavailableCommandHandler> _logger;
 
-    public MarkMenuItemUnavailableCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+
+    public MarkMenuItemUnavailableCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+        IAuthorizationService authorizationService, ILogger<MarkMenuItemUnavailableCommandHandler> logger)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _authorizationService = authorizationService;
+        _logger = logger;
     }
 
     public async Task Handle(MarkMenuItemUnavailableCommand request, CancellationToken cancellationToken)
@@ -37,5 +42,7 @@ public class MarkMenuItemUnavailableCommandHandler : IRequestHandler<MarkMenuIte
         restaurant.MarkMenuItemUnavailable(request.MenuItemId);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("MenuItem {MenuItemId} in restaurant {RestaurantId} marked as UNAVAILABLE by user {UserId}.",
+           request.MenuItemId, restaurant.Id, _currentUser.UserId);
     }
 }

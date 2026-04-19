@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -12,12 +13,15 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantAddress
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly IAuthorizationService _authorizationService;
+        private readonly ILogger<ChangeRestaurantAddressCommandHandler> _logger;
 
-        public ChangeRestaurantAddressCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+        public ChangeRestaurantAddressCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+            IAuthorizationService authorizationService, ILogger<ChangeRestaurantAddressCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _authorizationService = authorizationService;
+            _logger = logger;
         }
 
         public async Task Handle(ChangeRestaurantAddressCommand request, CancellationToken cancellationToken)
@@ -33,6 +37,8 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantAddress
 
             restaurant.ChangeAddress(request.NewAddress);
             await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Address of restaurant {RestaurantId} updated to '{NewAddress}' by user {UserId}.",
+               restaurant.Id, request.NewAddress, _currentUser.UserId);
         }
     }
 }

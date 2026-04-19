@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -12,12 +13,16 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantName
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly IAuthorizationService _authorizationService;
+        private readonly ILogger<ChangeRestaurantNameCommandHandler> _logger;
 
-        public ChangeRestaurantNameCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+
+        public ChangeRestaurantNameCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+            IAuthorizationService authorizationService, ILogger<ChangeRestaurantNameCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _authorizationService = authorizationService;
+            _logger = logger;
         }
 
         public async Task Handle(ChangeRestaurantNameCommand request, CancellationToken cancellationToken)
@@ -32,7 +37,8 @@ namespace OrderFlow.Application.Features.Resturant.ChangeRestaurantName
 
             restaurant.ChangeName(request.NewName);
             await _dbContext.SaveChangesAsync(cancellationToken);
-
+            _logger.LogInformation("Restaurant {RestaurantId} name changed to '{NewName}' by user {UserId}.",
+                 restaurant.Id, request.NewName, _currentUser.UserId);
         }
     }
 }

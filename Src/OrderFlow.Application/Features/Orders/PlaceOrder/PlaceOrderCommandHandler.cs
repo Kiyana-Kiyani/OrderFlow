@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -11,11 +12,14 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
     {
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
+        private readonly ILogger<PlaceOrderCommandHandler> _logger;
 
-        public PlaceOrderCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser)
+        public PlaceOrderCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+           ILogger<PlaceOrderCommandHandler> logger)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
+            _logger = logger;
         }
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
@@ -43,7 +47,6 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
 
             var menuItemDict = menuItems.ToDictionary(x => x.Id);
 
-
             foreach (var item in request.Items)
             {
                 if (menuItemDict.TryGetValue(item.MenuItemId, out var menuItem))
@@ -51,6 +54,10 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             }
             await _dbContext.CustomerOrders.AddAsync(order);
             await _dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",
+                order.Id, _currentUser.UserId, request.RestaurantId, order.TotalAmount, request.Items.Count);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

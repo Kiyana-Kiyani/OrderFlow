@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Exceptions;
@@ -13,12 +14,16 @@ public class RemoveMenuItemByIdCommandHandler : IRequestHandler<RemoveMenuItemBy
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
     private readonly IAuthorizationService _authorizationService;
+    private readonly ILogger<RemoveMenuItemByIdCommandHandler> _logger;
 
-    public RemoveMenuItemByIdCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser, IAuthorizationService authorizationService)
+
+    public RemoveMenuItemByIdCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
+        IAuthorizationService authorizationService, ILogger<RemoveMenuItemByIdCommandHandler> logger)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _authorizationService = authorizationService;
+        _logger = logger;
     }
 
     public async Task Handle(RemoveMenuItemByIdCommand request, CancellationToken cancellationToken)
@@ -37,5 +42,7 @@ public class RemoveMenuItemByIdCommandHandler : IRequestHandler<RemoveMenuItemBy
         restaurant.RemoveMenuItem(request.MenuItemId);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("MenuItem {MenuItemId} was removed from restaurant {RestaurantId} by user {UserId}.",
+              request.MenuItemId, restaurant.Id, _currentUser.UserId);
     }
 }
