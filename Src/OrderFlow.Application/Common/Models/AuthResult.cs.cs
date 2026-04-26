@@ -4,8 +4,8 @@
     {
         public bool Succeeded { get; private set; }
         public string? Error { get; private set; }
-        public string? Token { get; private set; } 
-        public Guid? UserId { get; private set; } 
+        public string? Token { get; private set; }
+        public Guid? UserId { get; private set; }
 
         private AuthResult() { }
         public static AuthResult Success(string token, Guid userId)
@@ -25,6 +25,13 @@
                 Succeeded = false,
                 Error = error
             };
+        }
+    }
+    public static class xxx
+    {
+        public static int Failure(string error)
+        {
+            return 1;
         }
     }
 }

@@ -10,7 +10,7 @@ using OrderFlow.Application.Features.Admin.RemoveRoleFromUser;
 namespace OrderFlow.Api.Controllers
 {
     [ApiController]
-    [Route("api/admin")]
+    [Route("api/v1/admin")]
     [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
@@ -25,9 +25,8 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(typeof(GetAllRolsResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<GetAllRolsResponse>> GetAllRoles(CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new GetAllRolsQuery(), cancellationToken);
-            return Ok(result);
-
+            var response = await _sender.Send(new GetAllRolsQuery(), cancellationToken);
+            return Ok(response);
         }
 
         [HttpGet("users")]

@@ -25,8 +25,6 @@ namespace OrderFlow.Infrastructure.DependencyInjection
 
             services.AddHttpContextAccessor();
 
-            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
-
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("Default")!));
 
@@ -43,6 +41,7 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
             }).AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddScoped<RoleManager<IdentityRole<Guid>>>();
 
             services.AddAuthentication(options =>
             {

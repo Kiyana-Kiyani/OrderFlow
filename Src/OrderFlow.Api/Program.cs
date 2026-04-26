@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -5,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using OrderFlow.Api.Middleware;
+using OrderFlow.Api.Swagger;
 using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
 using OrderFlow.Application.Security.Authorization;
@@ -43,18 +45,14 @@ namespace OrderFlow.Api
                         rollingInterval: RollingInterval.Day)
                 );
 
-
                 builder.Services.AddSingleton<IAuthorizationHandler, RestaurantOwnerAuthorizationHandler>();
 
                 builder.Services.AddInfrastructure(builder.Configuration);
-
-
 
                 builder.Services.AddControllers();
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Services.AddSwaggerGen(options =>
                 {
-
                     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                     {
                         In = ParameterLocation.Header,
@@ -65,7 +63,6 @@ namespace OrderFlow.Api
                         Type = SecuritySchemeType.Http,
 
                     });
-
                     options.AddSecurityRequirement(new OpenApiSecurityRequirement
                     {
                     {
@@ -80,7 +77,10 @@ namespace OrderFlow.Api
                         Array.Empty<string>()
                     }
                     });
+
+                    options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
+                builder.Services.AddValidatorsFromAssembly(typeof(Application.AssemblyMarker).Assembly);
 
                 builder.Services.AddMediatR(cfg =>
                 cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly));

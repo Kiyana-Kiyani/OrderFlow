@@ -14,7 +14,7 @@ using OrderFlow.Application.Features.MenuItems.RemoveMenuItemById;
 namespace OrderFlow.Api.Controllers
 {
     [ApiController]
-    [Route("api/restaurants/{restaurantId:guid}/menu-items")]
+    [Route("api/v1/restaurants/{restaurantId:guid}/menu-items")]
     public class MenuItemsController : ControllerBase
     {
         private readonly ISender _sender;
@@ -27,6 +27,8 @@ namespace OrderFlow.Api.Controllers
         [HttpGet]
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<GetMenuItemsResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMenuItems([FromRoute] Guid restaurantId, CancellationToken cancellationToken)
         {
             var response = await _sender.Send(new GetMenuItemsQuery(restaurantId), cancellationToken);
@@ -36,6 +38,8 @@ namespace OrderFlow.Api.Controllers
         [HttpGet("{menuItemId:guid}")]
         [AllowAnonymous]
         [ProducesResponseType(typeof(MenuItemDetailsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetMenuItemById([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
         {
             var response = await _sender.Send(new GetMenuItemByIdQuery(restaurantId, menuItemId), cancellationToken);
@@ -43,9 +47,10 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles ="Admin,Owner")]
+        [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(typeof(MenuItemDetailsResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AddMenuItem([FromRoute] Guid restaurantId, [FromBody] AddMenuItemRequest request, CancellationToken cancellationToken)
         {
             var command = new AddMenuItemCommand(restaurantId, request.Name, request.Price, request.Description);
@@ -58,6 +63,7 @@ namespace OrderFlow.Api.Controllers
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ChangeMenuItemDescription([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, [FromBody] string? description, CancellationToken cancellationToken)
         {
             var command = new ChangeMenuItemDescriptionCommand(restaurantId, menuItemId, description);
@@ -69,6 +75,7 @@ namespace OrderFlow.Api.Controllers
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ChangeMenuItemPrice([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, [FromBody] decimal price, CancellationToken cancellationToken)
         {
             var command = new ChangeMenuItemPriceCommand(restaurantId, menuItemId, price);
@@ -80,6 +87,7 @@ namespace OrderFlow.Api.Controllers
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> MarkMenuItemAvailable([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
         {
             var command = new MarkMenuItemAvailableCommand(restaurantId, menuItemId);
@@ -91,6 +99,7 @@ namespace OrderFlow.Api.Controllers
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> MarkMenuItemUnavailable([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
         {
             var command = new MarkMenuItemUnavailableCommand(restaurantId, menuItemId);
@@ -98,11 +107,11 @@ namespace OrderFlow.Api.Controllers
             return NoContent();
         }
 
-
         [HttpDelete("{menuItemId:guid}")]
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteMenuItem([FromRoute] Guid restaurantId, [FromRoute] Guid menuItemId, CancellationToken cancellationToken)
         {
             var command = new RemoveMenuItemByIdCommand(restaurantId, menuItemId);
