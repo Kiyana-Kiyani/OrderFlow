@@ -36,7 +36,6 @@
     <Folder Include="Features\Admin\" />
     <Folder Include="Features\Auth\" />
     <Folder Include="Features\MenuItems\" />
-    <Folder Include="Features\Resturant\" />
   </ItemGroup>
 
 </Project>

@@ -5,12 +5,12 @@ using OrderFlow.Domain.Entities;
 
 namespace OrderFlow.Application.Features.Resturant.CreateRestaurant
 {
-    public class CreateResturantCommandHandler : IRequestHandler<CreateRestaurantCommand, CreateRestaurantResponse>
+    public class CreateRestaurantCommandHandler : IRequestHandler<CreateRestaurantCommand, CreateRestaurantResponse>
     {
         private readonly IApplicationDbContext _dbContext;
-        private readonly ILogger<CreateResturantCommandHandler> _logger;
+        private readonly ILogger<CreateRestaurantCommandHandler> _logger;
 
-        public CreateResturantCommandHandler(IApplicationDbContext dbContext, ILogger<CreateResturantCommandHandler> logger)
+        public CreateRestaurantCommandHandler(IApplicationDbContext dbContext, ILogger<CreateRestaurantCommandHandler> logger)
         {
             _dbContext = dbContext;
             _logger = logger;

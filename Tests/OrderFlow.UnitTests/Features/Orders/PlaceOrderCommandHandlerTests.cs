@@ -10,7 +10,7 @@ using OrderFlow.Infrastructure.Persistence;
 
 namespace OrderFlow.UnitTests.Features.Orders
 {
-    public class PlaceOrderCommandHandlerTests
+    public class PlaceOrderCommandHandlerTests : IAsyncDisposable
     {
         private readonly ApplicationDbContext _dbContext;
         private readonly Mock<ICurrentUser> _currentUser;
@@ -67,6 +67,14 @@ namespace OrderFlow.UnitTests.Features.Orders
             savedOrder.Should().NotBeNull();
             savedOrder!.RestaurantId.Should().Be(restaurantGuid);
             savedOrder!.CustomerUserId.Should().Be(currentUserGuid);
+
+
+            _logger.Verify(x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Order created successfully with id:")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
 
 
@@ -133,6 +141,12 @@ namespace OrderFlow.UnitTests.Features.Orders
             Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
             //Assert
             await act.Should().ThrowAsync<ConflictException>();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _dbContext.Database.EnsureDeletedAsync();
+            await _dbContext.DisposeAsync();
         }
     }
 }
