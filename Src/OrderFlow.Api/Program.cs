@@ -7,6 +7,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
+using OrderFlow.Application;
 using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
 using OrderFlow.Application.Security.Authorization;
@@ -44,9 +45,8 @@ namespace OrderFlow.Api
                         rollingInterval: RollingInterval.Day)
                 );
 
-                builder.Services.AddSingleton<IAuthorizationHandler, RestaurantOwnerAuthorizationHandler>();
-
                 builder.Services.AddInfrastructure(builder.Configuration);
+                builder.Services.AddApplication();
 
                 builder.Services.AddControllers();
                 builder.Services.AddEndpointsApiExplorer();
@@ -80,14 +80,7 @@ namespace OrderFlow.Api
                     options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
 
-                builder.Services.AddValidatorsFromAssembly(typeof(Application.AssemblyMarker).Assembly);
-
-                builder.Services.AddMediatR(cfg =>
-                cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly));
-
-                builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-                builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
-
+          
                 builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
 
                 var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??

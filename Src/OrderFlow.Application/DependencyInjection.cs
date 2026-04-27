@@ -1,0 +1,30 @@
+﻿using FluentValidation;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
+using OrderFlow.Application.Behaviors;
+using OrderFlow.Application.Security.Authorization;
+using System.Reflection;
+
+namespace OrderFlow.Application
+{
+    public static class DependencyInjection
+    {
+        public static IServiceCollection AddApplication(this IServiceCollection services)
+        {
+            services.AddValidatorsFromAssemblyContaining<Application.AssemblyMarker>();
+
+            services.AddSingleton<IAuthorizationHandler, RestaurantOwnerAuthorizationHandler>();
+
+            services.AddMediatR(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly);
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+            });
+
+            return services;
+
+        }
+    }
+}
