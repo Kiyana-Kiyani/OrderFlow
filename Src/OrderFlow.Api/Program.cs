@@ -86,6 +86,7 @@ namespace OrderFlow.Api
                 cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly));
 
                 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
 
                 builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
 
