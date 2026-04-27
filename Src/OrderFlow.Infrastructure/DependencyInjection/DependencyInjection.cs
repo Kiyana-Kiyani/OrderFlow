@@ -41,6 +41,7 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
             }).AddEntityFrameworkStores<ApplicationDbContext>();
+
             services.AddScoped<RoleManager<IdentityRole<Guid>>>();
 
             services.AddAuthentication(options =>

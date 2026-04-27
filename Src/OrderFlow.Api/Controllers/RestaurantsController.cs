@@ -57,7 +57,7 @@ namespace OrderFlow.Api.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<CreateRestaurantResponse>> CreateRestaurant([FromBody] CreateRestaurantCommand createRestaurantCommand, CancellationToken cancellationToken)
+        public async Task<ActionResult<CreateRestaurantResponse>> Create([FromBody] CreateRestaurantCommand createRestaurantCommand, CancellationToken cancellationToken)
         {
             var response = await _sender.Send(createRestaurantCommand, cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = response.RestaurantId }, response);
@@ -68,7 +68,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ChangeRestaurantAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangeAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
         {
             await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
             return NoContent();
@@ -79,7 +79,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ActivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Activate(Guid restaurantId, CancellationToken cancellationToken)
         {
             await _sender.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
@@ -90,7 +90,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeactivateRestaurant(Guid restaurantId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Deactivate(Guid restaurantId, CancellationToken cancellationToken)
         {
             await _sender.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
             return NoContent();
@@ -101,7 +101,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ChangeRestaurantDescription(Guid restaurantId, [FromBody] string newDescription, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangeDescription(Guid restaurantId, [FromBody] string newDescription, CancellationToken cancellationToken)
         {
             await _sender.Send(new ChangeRestaurantDescriptionCommand(restaurantId, newDescription), cancellationToken);
             return NoContent();
@@ -112,7 +112,7 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ChangeRestaurantName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangeName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
         {
             await _sender.Send(new ChangeRestaurantNameCommand(restaurantId, newName), cancellationToken);
             return NoContent();

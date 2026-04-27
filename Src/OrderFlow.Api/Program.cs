@@ -21,7 +21,6 @@ namespace OrderFlow.Api
     {
         public static async Task Main(string[] args)
         {
-
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
                 .WriteTo.File(
@@ -80,6 +79,7 @@ namespace OrderFlow.Api
 
                     options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
+
                 builder.Services.AddValidatorsFromAssembly(typeof(Application.AssemblyMarker).Assembly);
 
                 builder.Services.AddMediatR(cfg =>
@@ -127,7 +127,9 @@ namespace OrderFlow.Api
                 var app = builder.Build();
 
                 app.UseMiddleware<GlobalExceptionMiddleware>();
+
                 app.UseSerilogRequestLogging();
+
                 if (app.Environment.IsDevelopment())
                 {
                     app.UseSwagger();
