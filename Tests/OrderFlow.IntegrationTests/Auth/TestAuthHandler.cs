@@ -17,6 +17,20 @@ namespace OrderFlow.IntegrationTests.Auth
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            // 1. Check if the Authorization header is completely missing
+            if (!Request.Headers.ContainsKey("Authorization"))
+            {
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+
+            // 2. (Optional but good) Ensure it's our specific TestAuth token
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (!authHeader.StartsWith("TestAuth"))
+            {
+                return Task.FromResult(AuthenticateResult.NoResult());
+            }
+
+            // 3. If the header exists, THEN create the fake Admin user
             var claims = new Claim[]
             {
                 new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),

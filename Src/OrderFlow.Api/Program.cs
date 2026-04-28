@@ -1,17 +1,14 @@
-using FluentValidation;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
 using OrderFlow.Application;
-using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Configuration;
-using OrderFlow.Application.Security.Authorization;
 using OrderFlow.Infrastructure.DependencyInjection;
+using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
 using RabbitMQ.Client;
 using Serilog;
@@ -80,29 +77,29 @@ namespace OrderFlow.Api
                     options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
 
-          
+
                 builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
 
-                var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??
-                       throw new InvalidOperationException("RabbitMQ configuration is missing.");
-
-                if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-                       string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
-                {
-                    throw new InvalidOperationException("RabbitMQ configuration is invalid.");
-                }
-
                 builder.Services.AddSingleton<IConnection>(sp =>
-                  {
-                      var factory = new ConnectionFactory
-                      {
-                          HostName = rabbit.Host,
-                          Port = rabbit.Port,
-                          UserName = rabbit.Username,
-                          Password = rabbit.Password
-                      };
-                      return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-                  });
+                {
+                    var rabbit = sp.GetRequiredService<IOptions<RabbitOptions>>().Value;
+
+                    if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
+                        string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
+                    {
+                        throw new InvalidOperationException("RabbitMQ configuration is invalid.");
+                    }
+
+                    var factory = new ConnectionFactory
+                    {
+                        HostName = rabbit.Host,
+                        Port = rabbit.Port,
+                        UserName = rabbit.Username,
+                        Password = rabbit.Password
+                    };
+
+                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                });
 
 
                 builder.Services.AddHealthChecks()
@@ -132,6 +129,17 @@ namespace OrderFlow.Api
                     await IdentityDataSeeder.RoleSeederAsync(app.Services);
                     await IdentityDataSeeder.AdminSeederAsync(app.Services);
                 }
+                if (app.Environment.IsEnvironment("Testing"))
+                {
+                    using (var scope = app.Services.CreateScope())
+                    {
+                        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        await dbContext.Database.MigrateAsync();
+                    }
+
+                    await IdentityDataSeeder.RoleSeederAsync(app.Services);
+                    await IdentityDataSeeder.AdminSeederAsync(app.Services);
+                }
 
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
@@ -153,6 +161,7 @@ namespace OrderFlow.Api
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Application terminated unexpectedly");
+                throw;
             }
             finally
             {

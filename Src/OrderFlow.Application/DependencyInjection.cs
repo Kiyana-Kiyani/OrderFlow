@@ -12,13 +12,13 @@ namespace OrderFlow.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
-            services.AddValidatorsFromAssemblyContaining<Application.AssemblyMarker>();
+            services.AddValidatorsFromAssemblyContaining<AssemblyMarker>();
 
             services.AddSingleton<IAuthorizationHandler, RestaurantOwnerAuthorizationHandler>();
 
             services.AddMediatR(cfg =>
             {
-                cfg.RegisterServicesFromAssembly(typeof(Application.AssemblyMarker).Assembly);
+                cfg.RegisterServicesFromAssembly(typeof(AssemblyMarker).Assembly);
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
                 cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
             });

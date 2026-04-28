@@ -10,9 +10,9 @@ namespace OrderFlow.Api.Middleware
     public class GlobalExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger _logger;
+        private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
-        public GlobalExceptionMiddleware(RequestDelegate requestDelegate, ILogger logger)
+        public GlobalExceptionMiddleware(RequestDelegate requestDelegate, ILogger<GlobalExceptionMiddleware> logger)
         {
             _next = requestDelegate;
             _logger = logger;
@@ -51,6 +51,7 @@ namespace OrderFlow.Api.Middleware
                 var detail = statusCode == HttpStatusCode.InternalServerError
                      ? "An unexpected error occurred on the server."
                      : ex.Message;
+
 
                 var pd = new ProblemDetails()
                 {
