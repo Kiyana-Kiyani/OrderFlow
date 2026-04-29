@@ -77,31 +77,6 @@ namespace OrderFlow.Api
                     options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
 
-
-                builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
-
-                builder.Services.AddSingleton<IConnection>(sp =>
-                {
-                    var rabbit = sp.GetRequiredService<IOptions<RabbitOptions>>().Value;
-
-                    if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-                        string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
-                    {
-                        throw new InvalidOperationException("RabbitMQ configuration is invalid.");
-                    }
-
-                    var factory = new ConnectionFactory
-                    {
-                        HostName = rabbit.Host,
-                        Port = rabbit.Port,
-                        UserName = rabbit.Username,
-                        Password = rabbit.Password
-                    };
-
-                    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-                });
-
-
                 builder.Services.AddHealthChecks()
                     .AddSqlServer(
                         builder.Configuration.GetConnectionString("Default")!,

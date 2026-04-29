@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Abstractions.Messaging;
 using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Application.Features.Orders.PlaceOrder;
 using OrderFlow.Domain.Entities;
@@ -15,6 +16,7 @@ namespace OrderFlow.UnitTests.Features.Orders
         private readonly ApplicationDbContext _dbContext;
         private readonly Mock<ICurrentUser> _currentUser;
         private readonly Mock<ILogger<PlaceOrderCommandHandler>> _logger;
+        private readonly Mock<IEventPublisher> _eventPublisher;
 
         private readonly PlaceOrderCommandHandler _handler;
 
@@ -27,8 +29,9 @@ namespace OrderFlow.UnitTests.Features.Orders
 
             _currentUser = new Mock<ICurrentUser>();
             _logger = new Mock<ILogger<PlaceOrderCommandHandler>>();
+            _eventPublisher = new Mock<IEventPublisher>();
 
-            _handler = new PlaceOrderCommandHandler(_dbContext, _currentUser.Object, _logger.Object);
+            _handler = new PlaceOrderCommandHandler(_dbContext, _currentUser.Object, _logger.Object, _eventPublisher.Object);
         }
 
         [Fact]
@@ -38,7 +41,6 @@ namespace OrderFlow.UnitTests.Features.Orders
             var currentUserGuid = Guid.NewGuid();
             _currentUser.Setup(x => x.UserId).Returns(currentUserGuid);
 
-            var restaurantGuid = Guid.NewGuid();
             var restaurant = new Restaurant(currentUserGuid, "spring", "Address of Restaurant");
 
             var itemGuid1 = restaurant.AddMenuItem("Item 1", 10m);
@@ -47,7 +49,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             _dbContext.Restaurants.Add(restaurant);
             await _dbContext.SaveChangesAsync(CancellationToken.None);
 
-            var command = new PlaceOrderCommand(RestaurantId: restaurantGuid, new List<PlaceOrderItemCommand>
+            var command = new PlaceOrderCommand(RestaurantId: restaurant.Id, new List<PlaceOrderItemCommand>
                 {
                     new PlaceOrderItemCommand(itemGuid1, 1),
                     new PlaceOrderItemCommand(itemGuid2, 2),
@@ -65,14 +67,14 @@ namespace OrderFlow.UnitTests.Features.Orders
             result.OrderId.Should().NotBeEmpty();
 
             savedOrder.Should().NotBeNull();
-            savedOrder!.RestaurantId.Should().Be(restaurantGuid);
+            savedOrder!.RestaurantId.Should().Be(restaurant.Id);
             savedOrder!.CustomerUserId.Should().Be(currentUserGuid);
 
 
             _logger.Verify(x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Order created successfully with id:")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("placed successfully")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }

@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Application.Abstractions.Messaging;
 using OrderFlow.Application.Common.Exceptions;
+using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Domain.Entities;
 
 namespace OrderFlow.Application.Features.Orders.PlaceOrder
@@ -13,13 +15,15 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly ILogger<PlaceOrderCommandHandler> _logger;
+        private readonly IEventPublisher _eventPublisher;
 
         public PlaceOrderCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
-           ILogger<PlaceOrderCommandHandler> logger)
+           ILogger<PlaceOrderCommandHandler> logger, IEventPublisher eventPublisher)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _logger = logger;
+            _eventPublisher = eventPublisher;
         }
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
@@ -58,6 +62,10 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             _logger.LogInformation(
                 "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",
                 order.Id, _currentUser.UserId, request.RestaurantId, order.TotalAmount, request.Items.Count);
+
+            var orderPlaceEvent = new OrderPlacedIntegrationEvent(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
+
+            await _eventPublisher.PublishAsync(orderPlaceEvent, cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

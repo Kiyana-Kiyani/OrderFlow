@@ -11,7 +11,7 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
         {
         }
         [Fact]
-        public async Task CreateRestaurant_ShouldReturn201_WhenRequestIsValid()
+        public async Task Create_ShouldReturn201_WhenRequestIsValid()
         {
             // Arrange
             var command = new CreateRestaurantCommand(
@@ -57,7 +57,7 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
             problemDetails!.Title.Should().NotBeNullOrEmpty();
         }
         [Fact]
-        public async Task CreateRestaurant_ShouldReturn401Or403_WhenUserIsNotAdmin()
+        public async Task Create_ShouldReturn401Or403_WhenUserIsNotAdmin()
         {
             // Arrange
             var command = new CreateRestaurantCommand(
