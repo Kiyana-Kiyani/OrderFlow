@@ -27,7 +27,7 @@ namespace OrderFlow.Domain.Entities
         public bool IsActive { get; private set; }
         public Guid OwnerUserId { get; private set; }
         public DateTime CreatedAtUtc { get; private set; }
-        public IReadOnlyCollection<MenuItem> MenuItems => _menuItems.AsReadOnly();
+        public IReadOnlyCollection<MenuItem> MenuItems => _menuItems;
 
         public void ChangeName(string name)
         {
