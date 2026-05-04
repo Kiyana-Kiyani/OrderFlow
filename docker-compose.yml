@@ -12,7 +12,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development   
       # DB
       ConnectionStrings__Default: Server=sqlserver;Database=OrderFlowDB;User Id=sa;Password=${PASSWORD};TrustServerCertificate=True;
-      # RabbitMQ (use service name!)
+      # RabbitMQ 
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Port: 5672
       RabbitMQ__Username: guest

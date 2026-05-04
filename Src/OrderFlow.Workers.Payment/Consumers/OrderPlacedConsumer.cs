@@ -1,7 +1,7 @@
-using System.Text.Json;
 using OrderFlow.Contracts.IntegrationEvents;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text.Json;
 
 namespace OrderFlow.Workers.Payment.Consumers
 {
@@ -67,7 +67,6 @@ namespace OrderFlow.Workers.Payment.Consumers
             if (_channel is not null) await _channel.CloseAsync(cancellationToken);
             await base.StopAsync(cancellationToken);
         }
-
     }
 }
 

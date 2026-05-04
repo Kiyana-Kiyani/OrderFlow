@@ -8,6 +8,7 @@ namespace OrderFlow.Workers.Payment
         public static void Main(string[] args)
         {
             var builder = Host.CreateApplicationBuilder(args);
+
             builder.Services.AddHostedService<OrderPlacedConsumer>();
 
             builder.Services.AddSingleton<IConnection>(opt =>
@@ -18,9 +19,6 @@ namespace OrderFlow.Workers.Payment
                 };
                 return factory.CreateConnectionAsync().GetAwaiter().GetResult();
             });
-
-            //ddd
-
 
             builder.Services.AddScoped<PaymentProcessor>();
 
