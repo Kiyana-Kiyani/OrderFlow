@@ -27,7 +27,7 @@ namespace OrderFlow.Domain.Entities
         public OrderStatus Status { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public decimal TotalAmount { get; private set; }
-        public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
+        public IReadOnlyCollection<OrderItem> OrderItems => _orderItems;
 
 
         private void RecalculateTotalAmount()
@@ -43,7 +43,7 @@ namespace OrderFlow.Domain.Entities
             if (unitPrice <= 0) throw new ArgumentOutOfRangeException(nameof(unitPrice), "Unit price must be greater than zero.");
 
             var orderItem = _orderItems.FirstOrDefault(x => x.MenuItemId == menuItemId);
-         
+
             if (orderItem != null)
                 orderItem.ChangeQuantity(orderItem.Quantity + quantity);
             else
@@ -62,7 +62,7 @@ namespace OrderFlow.Domain.Entities
         //    orderItem.ChangeQuantity(quantity);
         //    RecalculateTotalAmount();
         //}
-       
+
         public void RemoveItem(Guid orderItemId)
         {
             EnsureEditable();

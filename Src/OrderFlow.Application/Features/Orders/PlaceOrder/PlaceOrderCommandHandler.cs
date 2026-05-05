@@ -63,7 +63,8 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
                 "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",
                 order.Id, _currentUser.UserId, request.RestaurantId, order.TotalAmount, request.Items.Count);
 
-            var orderPlaceEvent = new OrderPlacedIntegrationEvent(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
+            var orderPlaceEvent = OrderPlacedIntegrationEvent.
+                CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
 
             await _eventPublisher.PublishAsync(orderPlaceEvent, cancellationToken);
 

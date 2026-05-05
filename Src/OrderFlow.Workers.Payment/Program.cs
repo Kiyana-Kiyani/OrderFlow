@@ -16,6 +16,10 @@ namespace OrderFlow.Workers.Payment
                 var factory = new ConnectionFactory
                 {
                     HostName = "localhost",
+                    Port = 5672,
+                    UserName = "guest",
+                    Password = "guest"
+
                 };
                 return factory.CreateConnectionAsync().GetAwaiter().GetResult();
             });

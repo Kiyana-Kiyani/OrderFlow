@@ -26,7 +26,7 @@ namespace OrderFlow.Workers.Payment.Consumers
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
-            await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Fanout, true, false, cancellationToken: stoppingToken);
+            await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Topic, true, false, cancellationToken: stoppingToken);
             await _channel.QueueDeclareAsync(QueueName, true, false, false, cancellationToken: stoppingToken);
             await _channel.QueueBindAsync(QueueName, ExchangeName, RoatingKey, null, cancellationToken: stoppingToken);
             await _channel.BasicQosAsync(0, 1, false, cancellationToken: stoppingToken);

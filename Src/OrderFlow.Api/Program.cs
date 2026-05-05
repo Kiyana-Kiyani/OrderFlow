@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
 using OrderFlow.Application;
-using OrderFlow.Application.Configuration;
 using OrderFlow.Infrastructure.DependencyInjection;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
@@ -95,6 +93,15 @@ namespace OrderFlow.Api
                 app.UseMiddleware<GlobalExceptionMiddleware>();
 
                 app.UseSerilogRequestLogging();
+
+                using (var scope = app.Services.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    if (app.Environment.IsDevelopment())
+                    {
+                        dbContext.Database.Migrate();
+                    }
+                }
 
                 if (app.Environment.IsDevelopment())
                 {
