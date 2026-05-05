@@ -10,7 +10,7 @@ namespace OrderFlow.Domain.Entities
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required", nameof(name));
             if (price <= 0) throw new NegativeOrZeroPriceException(price);
             Name = name.Trim();
-            Id = Guid.NewGuid();
+            Id = Guid.Empty;
             Description = NormalizeOptional(description);
             Price = price;
             IsAvailable = true;

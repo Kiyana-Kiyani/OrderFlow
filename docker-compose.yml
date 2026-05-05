@@ -68,7 +68,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+     - rabbitmq_data:/var/lib/rabbitmq
  
 
 volumes:
   sql_data:
+  rabbitmq_data:
