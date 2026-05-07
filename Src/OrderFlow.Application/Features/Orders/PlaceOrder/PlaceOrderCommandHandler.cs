@@ -1,9 +1,9 @@
-﻿using MediatR;
+﻿using MassTransit;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Application.Abstractions.Messaging;
 using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Domain.Entities;
@@ -15,19 +15,21 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
         private readonly IApplicationDbContext _dbContext;
         private readonly ICurrentUser _currentUser;
         private readonly ILogger<PlaceOrderCommandHandler> _logger;
-        private readonly IEventPublisher _eventPublisher;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public PlaceOrderCommandHandler(IApplicationDbContext dbContext, ICurrentUser currentUser,
-           ILogger<PlaceOrderCommandHandler> logger, IEventPublisher eventPublisher)
+           ILogger<PlaceOrderCommandHandler> logger, IPublishEndpoint publishEndpointr)
         {
             _dbContext = dbContext;
             _currentUser = currentUser;
             _logger = logger;
-            _eventPublisher = eventPublisher;
+            _publishEndpoint = publishEndpointr;
         }
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("ddddddd");
+
             var restaurant = _dbContext.Restaurants.AsNoTracking()
                 .FirstOrDefault(r => r.Id == request.RestaurantId && r.IsActive);
 
@@ -66,7 +68,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             var orderPlaceEvent = OrderPlacedIntegrationEvent.
                 CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
 
-            await _eventPublisher.PublishAsync(orderPlaceEvent, cancellationToken);
+            await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

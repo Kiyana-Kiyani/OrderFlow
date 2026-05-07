@@ -1,72 +1,36 @@
+using MassTransit;
 using OrderFlow.Contracts.IntegrationEvents;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using System.Text.Json;
 
 namespace OrderFlow.Workers.Payment.Consumers
 {
-    public class OrderPlacedConsumer : BackgroundService
+    public class OrderPlacedConsumer : IConsumer<OrderPlacedIntegrationEvent>
     {
         private readonly ILogger<OrderPlacedConsumer> _logger;
-        private readonly IConnection _connection;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
-        private IChannel? _channel;
 
-        private const string QueueName = "payment.processing.queue";
-        private const string ExchangeName = "orderflow.events";
-        private const string RoatingKey = "orderplacedintegrationevent";
-
-        public OrderPlacedConsumer(ILogger<OrderPlacedConsumer> logger, IConnection connection, IServiceScopeFactory serviceScopeFactory)
+        public OrderPlacedConsumer(ILogger<OrderPlacedConsumer> logger)
         {
             _logger = logger;
-            _connection = connection;
-            _serviceScopeFactory = serviceScopeFactory;
         }
-
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public async Task Consume(ConsumeContext<OrderPlacedIntegrationEvent> context)
         {
-            _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
-            await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Topic, true, false, cancellationToken: stoppingToken);
-            await _channel.QueueDeclareAsync(QueueName, true, false, false, cancellationToken: stoppingToken);
-            await _channel.QueueBindAsync(QueueName, ExchangeName, RoatingKey, null, cancellationToken: stoppingToken);
-            await _channel.BasicQosAsync(0, 1, false, cancellationToken: stoppingToken);
+            _logger.LogInformation("zzzzzz");
+            var message = context.Message;
 
-            var consumer = new AsyncEventingBasicConsumer(_channel);
+            await Task.Delay(2000, context.CancellationToken);
+            bool paymentSuccess = new Random().Next(1, 100) > 10;
 
-            consumer.ReceivedAsync += async (sender, eventArgs) =>
+            if (paymentSuccess)
             {
-                using var scope = _serviceScopeFactory.CreateScope();
-                var process = scope.ServiceProvider.GetRequiredService<PaymentProcessor>();
-
-                try
-                {
-                    var body = eventArgs.Body.ToArray();
-                    var orderPlacedEvent = JsonSerializer.Deserialize<OrderPlacedIntegrationEvent>(body);
-
-                    if (orderPlacedEvent is not null)
-                    {
-
-                        process.HandleAsync(orderPlacedEvent, stoppingToken).GetAwaiter().GetResult();
-                    }
-
-                    await _channel.BasicAckAsync(eventArgs.DeliveryTag, false, cancellationToken: stoppingToken);
-
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing message: {Message}", ex.Message);
-                    await _channel.BasicAckAsync(eventArgs.DeliveryTag, false, cancellationToken: stoppingToken);
-
-                }
-            };
-            await _channel.BasicConsumeAsync(QueueName, false, consumer, cancellationToken: stoppingToken);
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        public override async Task StopAsync(CancellationToken cancellationToken)
-        {
-            if (_channel is not null) await _channel.CloseAsync(cancellationToken);
-            await base.StopAsync(cancellationToken);
+                _logger.LogInformation("Payment successful for Order {OrderId}!", message.OrderId);
+                await context.Publish(PaymentSucceededIntegrationEvent.CreateNew(message.OrderId));
+            }
+            else
+            {
+                _logger.LogWarning("Payment failed for Order {OrderId}.", message.OrderId);
+                await context.Publish(PaymentFailedIntegrationEvent.CreateNew(message.OrderId, "Declined by bank."));
+            }
         }
     }
 }
+
 

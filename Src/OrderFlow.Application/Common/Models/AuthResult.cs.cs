@@ -27,11 +27,4 @@
             };
         }
     }
-    public static class xxx
-    {
-        public static int Failure(string error)
-        {
-            return 1;
-        }
-    }
 }

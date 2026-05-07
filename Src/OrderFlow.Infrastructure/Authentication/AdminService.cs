@@ -26,7 +26,7 @@ namespace OrderFlow.Infrastructure.Authentication
             var user = await _userManager.FindByIdAsync(userId.ToString());
 
             if (user == null)
-                throw new NotFoundException("User",userId);
+                throw new NotFoundException("User", userId);
 
             var roleExists = await _roleManager.RoleExistsAsync(role);
             if (!roleExists)
@@ -97,7 +97,7 @@ namespace OrderFlow.Infrastructure.Authentication
 
         public async Task<IReadOnlyList<string?>> GetAllRolesAsync(CancellationToken cancellationToken)
         {
-            var roles = await _dbContext.Roles.Select(x => x.Name).ToListAsync();
+            var roles = await _dbContext.Roles.Select(x => x.Name).ToListAsync(cancellationToken);
             return roles.AsReadOnly();
         }
     }

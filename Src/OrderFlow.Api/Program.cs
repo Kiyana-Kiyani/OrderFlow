@@ -8,7 +8,6 @@ using OrderFlow.Application;
 using OrderFlow.Infrastructure.DependencyInjection;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
-using RabbitMQ.Client;
 using Serilog;
 
 namespace OrderFlow.Api
@@ -19,9 +18,7 @@ namespace OrderFlow.Api
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
-                .WriteTo.File(
-                path: "Log/Log-.txt",
-                rollingInterval: RollingInterval.Day)
+                .WriteTo.Console()
                 .CreateBootstrapLogger();
 
             try
@@ -31,14 +28,12 @@ namespace OrderFlow.Api
                 var builder = WebApplication.CreateBuilder(args);
 
                 builder.Host.UseSerilog((context, services, configuration) => configuration
-                    .MinimumLevel.Warning()
-                    .Enrich.FromLogContext()
-                    .ReadFrom.Services(services)
-                    .WriteTo.Console()
-                    .WriteTo.File(
-                        path: "Log/Log-.txt",
-                        rollingInterval: RollingInterval.Day)
-                );
+                        .MinimumLevel.Information()
+                        .Enrich.FromLogContext()
+                        .Enrich.WithProperty("Application", "OrderApi")
+                        .ReadFrom.Services(services)
+                        .WriteTo.Console()
+                        .WriteTo.Seq(context.Configuration["Seq:Url"]!));
 
                 builder.Services.AddInfrastructure(builder.Configuration);
                 builder.Services.AddApplication();
@@ -80,13 +75,7 @@ namespace OrderFlow.Api
                         builder.Configuration.GetConnectionString("Default")!,
                         failureStatus: HealthStatus.Unhealthy,
                         name: "sqlserver",
-                        tags: new[] { "ready" })
-                    .AddRabbitMQ(
-                        sp => sp.GetRequiredService<IConnection>(),
-                        failureStatus: HealthStatus.Unhealthy,
-                        name: "rabbitmq",
-                        tags: new[] { "ready" }
-                    );
+                        tags: new[] { "ready" });
 
                 var app = builder.Build();
 

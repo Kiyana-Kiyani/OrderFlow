@@ -1,19 +1,17 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Application.Abstractions.Messaging;
 using OrderFlow.Application.Configuration;
 using OrderFlow.Infrastructure.Authentication;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Persistence;
-using OrderFlow.Infrastructure.RabbitMQ;
-using RabbitMQ.Client;
+
 
 namespace OrderFlow.Infrastructure.DependencyInjection
 {
@@ -78,26 +76,42 @@ namespace OrderFlow.Infrastructure.DependencyInjection
 
             services.Configure<RabbitMqOptions>(configuration.GetSection("RabbitMQ"));
 
-            services.AddSingleton<IConnection>(sp =>
+            var rabbitMq = configuration.GetSection("RabbitMQ");
+            services.AddMassTransit(x =>
             {
-                var rabbit = sp.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-                if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-                    string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
+                x.UsingRabbitMq((context, cfg) =>
                 {
-                    throw new InvalidOperationException("RabbitMQ configuration is invalid.");
-                }
+                    cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
+                    {
+                        h.Username(rabbitMq["Username"]!);
+                        h.Password(rabbitMq["Password"]!);
+                    });
 
-                var factory = new ConnectionFactory
-                {
-                    HostName = rabbit.Host,
-                    Port = rabbit.Port,
-                    UserName = rabbit.Username,
-                    Password = rabbit.Password
-                };
-
-                return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                    cfg.ConfigureEndpoints(context);
+                });
             });
-            services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
+
+
+            //services.AddSingleton<IConnection>(sp =>
+            //{
+            //    var rabbit = sp.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+            //    if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
+            //        string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
+            //    {
+            //        throw new InvalidOperationException("RabbitMQ configuration is invalid.");
+            //    }
+
+            //    var factory = new ConnectionFactory
+            //    {
+            //        HostName = rabbit.Host,
+            //        Port = rabbit.Port,
+            //        UserName = rabbit.Username,
+            //        Password = rabbit.Password
+            //    };
+
+            //    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+            //});
+            //       services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 
 
             return services;

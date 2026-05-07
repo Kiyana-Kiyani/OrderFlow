@@ -1,6 +1,8 @@
 name: orderflow
 
 services:
+
+
   orderflow.api:
     container_name: api 
     image: ${DOCKER_REGISTRY-}orderflowapi 
@@ -12,16 +14,19 @@ services:
       ASPNETCORE_ENVIRONMENT: Development   
       # DB
       ConnectionStrings__Default: Server=sqlserver;Database=OrderFlowDB;User Id=sa;Password=${PASSWORD};TrustServerCertificate=True;
-      # RabbitMQ 
+      # RabbitMQ
       RabbitMQ__Host: rabbitmq
+      RabbitMQ__VirtualHost: /
       RabbitMQ__Port: 5672
-      RabbitMQ__Username: guest
-      RabbitMQ__Password: guest
+      RabbitMQ__Username: ${RabbitMQ_Username}
+      RabbitMQ__Password: ${RabbitMQ_Password}
       # Jwt
       Jwt__Audience: ${JwtAudience}
       Jwt__Issuer: ${JwtIssuer}
       Jwt__SecretKey: ${JwtSecretKey}
       Jwt__ExpirationMinutes: ${JwtExpirationMinutes}
+      # Seq
+      Seq__Url: http://seq:5341
 
     ports:
        - "5000:8080"
@@ -31,12 +36,17 @@ services:
         condition: service_healthy
        rabbitmq:
         condition: service_healthy
+       seq:
+        condition: service_healthy
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
       interval: 10s
       timeout: 2s
       retries: 2
+
+
+
 
   sqlserver:
     container_name: sqlserver  
@@ -54,6 +64,8 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
 
+
+
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
@@ -70,8 +82,52 @@ services:
       retries: 5
     volumes:
      - rabbitmq_data:/var/lib/rabbitmq
- 
+    
+
+
+  seq:
+    container_name: seq_logger
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_NOAUTHENTICATION: true
+    volumes:
+      - seq_data:/data
+    ports:
+      - "5341:80" 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 15s
+   
+
+    
+
+  orderflow.workers.payment:
+    image: ${DOCKER_REGISTRY-}orderflowworkerspayment
+    build:
+      context: .
+      dockerfile: Src/OrderFlow.Workers.Payment/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      # RabbitMQ
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__VirtualHost: /
+      RabbitMQ__Username: ${RabbitMQ_Username}
+      RabbitMQ__Password: ${RabbitMQ_Password}
+      # Seq
+      Seq__Url: http://seq:5341
+    depends_on: 
+       rabbitmq:
+        condition: service_healthy
+       seq:
+        condition: service_healthy
+
 
 volumes:
   sql_data:
   rabbitmq_data:
+  seq_data:

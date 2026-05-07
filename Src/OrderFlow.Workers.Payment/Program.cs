@@ -1,5 +1,6 @@
+using MassTransit;
 using OrderFlow.Workers.Payment.Consumers;
-using RabbitMQ.Client;
+using Serilog;
 
 namespace OrderFlow.Workers.Payment
 {
@@ -9,23 +10,29 @@ namespace OrderFlow.Workers.Payment
         {
             var builder = Host.CreateApplicationBuilder(args);
 
-            builder.Services.AddHostedService<OrderPlacedConsumer>();
+            var rabbitMq = builder.Configuration.GetSection("RabbitMQ");
+            var seq = builder.Configuration.GetSection("Seq");
 
-            builder.Services.AddSingleton<IConnection>(opt =>
+            builder.Services.AddSerilog((services, configuration) => configuration
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("Application", "PaymentWorker")
+                .WriteTo.Console()
+                .WriteTo.Seq(seq["Url"]!));
+
+            builder.Services.AddMassTransit(x =>
             {
-                var factory = new ConnectionFactory
+                x.AddConsumer<OrderPlacedConsumer>();
+                x.UsingRabbitMq((context, cfg) =>
                 {
-                    HostName = "localhost",
-                    Port = 5672,
-                    UserName = "guest",
-                    Password = "guest"
-
-                };
-                return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+                    cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
+                    {
+                        h.Username(rabbitMq["Username"]!);
+                        h.Password(rabbitMq["Password"]!);
+                    });
+                    cfg.ConfigureEndpoints(context);
+                });
             });
-
-            builder.Services.AddScoped<PaymentProcessor>();
-
 
             var host = builder.Build();
             host.Run();
