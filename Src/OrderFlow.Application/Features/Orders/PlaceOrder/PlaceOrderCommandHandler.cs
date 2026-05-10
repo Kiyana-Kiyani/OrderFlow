@@ -68,7 +68,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             var orderPlaceEvent = OrderPlacedIntegrationEvent.
                 CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
 
-            await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
+            await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

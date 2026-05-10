@@ -16,20 +16,24 @@ namespace OrderFlow.Workers.Payment.Consumers
             _logger.LogInformation("zzzzzz");
             var message = context.Message;
 
-            await Task.Delay(2000, context.CancellationToken);
+            await Task.Delay(2000);
             bool paymentSuccess = new Random().Next(1, 100) > 10;
 
             if (paymentSuccess)
             {
                 _logger.LogInformation("Payment successful for Order {OrderId}!", message.OrderId);
-                await context.Publish(PaymentSucceededIntegrationEvent.CreateNew(message.OrderId));
+                await context.Publish(PaymentSucceededIntegrationEvent.CreateNew(message.OrderId)
+                    , x => x.SetRoutingKey("order.placed.success"));
             }
             else
             {
                 _logger.LogWarning("Payment failed for Order {OrderId}.", message.OrderId);
-                await context.Publish(PaymentFailedIntegrationEvent.CreateNew(message.OrderId, "Declined by bank."));
+                await context.Publish(PaymentFailedIntegrationEvent.CreateNew(message.OrderId, "Declined by bank.")
+                    , x => x.SetRoutingKey("order.placed.failed"));
             }
         }
+
+
     }
 }
 

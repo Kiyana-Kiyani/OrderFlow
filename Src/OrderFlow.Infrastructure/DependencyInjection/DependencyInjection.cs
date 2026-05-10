@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Configuration;
+using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Infrastructure.Authentication;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Persistence;
@@ -17,7 +18,9 @@ namespace OrderFlow.Infrastructure.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration,
+            Action<IBusRegistrationConfigurator>? configureConsumers = null,
+            Action<IBusRegistrationContext, IRabbitMqBusFactoryConfigurator>? configureRabbitMqEndpoints = null)
         {
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
@@ -79,6 +82,8 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             var rabbitMq = configuration.GetSection("RabbitMQ");
             services.AddMassTransit(x =>
             {
+                configureConsumers?.Invoke(x);
+
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
@@ -87,17 +92,13 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                         h.Password(rabbitMq["Password"]!);
                     });
 
-                    cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
+                    cfg.Message<OrderPlacedIntegrationEvent>(x => x.SetEntityName("orderflow.events"));
+                    cfg.Publish<OrderPlacedIntegrationEvent>(x =>
                     {
-                        e.SetQuorumQueue();
-                        e.ConfigureConsumeTopology = false;
-                        e.Bind("orderflow.events", s =>
-                        {
-                            s.RoutingKey = "orderplaced";
-                            s.ExchangeType = ExchangeType.Topic.ToString();
-                        });
-                        e.ConfigureConsumer<OrderPlacedConsumer>(context);
+                        x.ExchangeType = "Topic";
+                        x.Durable = true;
                     });
+                    configureRabbitMqEndpoints?.Invoke(context, cfg);
                 });
             });
 
