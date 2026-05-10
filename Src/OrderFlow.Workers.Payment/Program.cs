@@ -1,5 +1,7 @@
 using MassTransit;
+using MassTransit.Transports.Fabric;
 using OrderFlow.Workers.Payment.Consumers;
+
 using Serilog;
 
 namespace OrderFlow.Workers.Payment
@@ -30,7 +32,21 @@ namespace OrderFlow.Workers.Payment
                         h.Username(rabbitMq["Username"]!);
                         h.Password(rabbitMq["Password"]!);
                     });
-                    cfg.ConfigureEndpoints(context);
+                    cfg.UseMessageRetry(r =>
+                    {
+                        r.Interval(3, TimeSpan.FromSeconds(2));
+                    });
+                    cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
+                    {
+                        e.SetQuorumQueue();
+                        e.ConfigureConsumeTopology = false;
+                        e.Bind("orderflow.events", s =>
+                        {
+                            s.RoutingKey = "orderplaced";
+                            s.ExchangeType = ExchangeType.Topic.ToString();
+                        });
+                        e.ConfigureConsumer<OrderPlacedConsumer>(context);
+                    });
                 });
             });
 

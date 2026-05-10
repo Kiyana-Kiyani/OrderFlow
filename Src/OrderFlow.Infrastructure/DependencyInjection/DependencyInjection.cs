@@ -87,7 +87,17 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                         h.Password(rabbitMq["Password"]!);
                     });
 
-                    cfg.ConfigureEndpoints(context);
+                    cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
+                    {
+                        e.SetQuorumQueue();
+                        e.ConfigureConsumeTopology = false;
+                        e.Bind("orderflow.events", s =>
+                        {
+                            s.RoutingKey = "orderplaced";
+                            s.ExchangeType = ExchangeType.Topic.ToString();
+                        });
+                        e.ConfigureConsumer<OrderPlacedConsumer>(context);
+                    });
                 });
             });
 
