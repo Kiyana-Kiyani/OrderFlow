@@ -44,7 +44,7 @@ namespace OrderFlow.Workers.Payment
                         e.Bind("orderflow.events", s =>
                         {
                             s.RoutingKey = "orderplaced";
-                            s.ExchangeType = "Topic";
+                            s.ExchangeType = "topic";
                         });
                         e.ConfigureConsumer<OrderPlacedConsumer>(context);
                     });
@@ -52,14 +52,14 @@ namespace OrderFlow.Workers.Payment
                     cfg.Message<PaymentSucceededIntegrationEvent>(x => x.SetEntityName("Payment.Result"));
                     cfg.Publish<PaymentSucceededIntegrationEvent>(x =>
                     {
-                        x.ExchangeType = "Topic";
+                        x.ExchangeType = "topic";
                         x.Durable = true;
                     });
 
                     cfg.Message<PaymentFailedIntegrationEvent>(x => x.SetEntityName("Payment.Result"));
                     cfg.Publish<PaymentFailedIntegrationEvent>(x =>
                     {
-                        x.ExchangeType = "Topic";
+                        x.ExchangeType = "topic";
                         x.Durable = true;
                     });
 

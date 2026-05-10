@@ -95,7 +95,7 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                     cfg.Message<OrderPlacedIntegrationEvent>(x => x.SetEntityName("orderflow.events"));
                     cfg.Publish<OrderPlacedIntegrationEvent>(x =>
                     {
-                        x.ExchangeType = "Topic";
+                        x.ExchangeType = "topic";
                         x.Durable = true;
                     });
                     configureRabbitMqEndpoints?.Invoke(context, cfg);

@@ -53,7 +53,7 @@ namespace OrderFlow.Api
                             e.Bind("Payment.Result", s =>
                             {
                                 s.RoutingKey = "order.placed.*";
-                                s.ExchangeType = "Topic";
+                                s.ExchangeType = "topic";
                             });
 
                             e.ConfigureConsumer<PaymentSucceededConsumer>(context);
