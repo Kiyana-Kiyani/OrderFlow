@@ -168,8 +168,16 @@ namespace OrderFlow.Infrastructure.Migrations
                     b.Property<Guid>("RestaurantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("RestaurantName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -216,6 +224,9 @@ namespace OrderFlow.Infrastructure.Migrations
 
                     b.Property<Guid>("CustomerOrderId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("MenuItemId")
                         .HasColumnType("uniqueidentifier");

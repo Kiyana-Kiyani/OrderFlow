@@ -1,14 +1,16 @@
-﻿namespace OrderFlow.Domain.Entities
+﻿using OrderFlow.Domain.Exceptions.MenuItem;
+
+namespace OrderFlow.Domain.Entities
 {
     public class MenuItem
     {
         private MenuItem() { }
         internal MenuItem(string name, decimal price, Guid restaurantId, string? description)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("name");
-            if (price <= 0) throw new ArgumentOutOfRangeException(nameof(price), "Price must be greater than zero.");
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required", nameof(name));
+            if (price <= 0) throw new NegativeOrZeroPriceException(price);
             Name = name.Trim();
-            Id = Guid.NewGuid();
+            Id = Guid.Empty;
             Description = NormalizeOptional(description);
             Price = price;
             IsAvailable = true;
@@ -21,7 +23,6 @@
         public decimal Price { get; private set; }
         public bool IsAvailable { get; private set; }
         public Guid RestaurantId { get; private set; }
-
 
         internal void ChangeName(string name)
         {
@@ -37,10 +38,9 @@
         internal void ChangePrice(decimal price)
         {
             if (price <= 0)
-                throw new ArgumentOutOfRangeException(nameof(price), "Price must be greater than zero.");
+                throw new NegativeOrZeroPriceException(price);
             Price = price;
         }
-
         internal void MarkAsAvailable() => IsAvailable = true;
         internal void MarkAsUnavailable() => IsAvailable = false;
         private static string? NormalizeOptional(string? value)

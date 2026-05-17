@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
-VisualStudioVersion = 18.3.11527.330 d18.3
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37216.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Infrastructure", "Src\OrderFlow.Infrastructure\OrderFlow.Infrastructure.csproj", "{76EEEE2A-355F-491D-A23B-D4887FB6F362}"
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Workers.Payment", "Src\OrderFlow.Workers.Payment\OrderFlow.Workers.Payment.csproj", "{4434621A-E123-9D8C-570C-7244968FC18D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -129,6 +131,18 @@ Global
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|x64.Build.0 = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|x86.ActiveCfg = Release|Any CPU
 		{81DDED9D-158B-E303-5F62-77A2896D2A5A}.Release|x86.Build.0 = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|x64.Build.0 = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Debug|x86.Build.0 = Debug|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|x64.ActiveCfg = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|x64.Build.0 = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|x86.ActiveCfg = Release|Any CPU
+		{4434621A-E123-9D8C-570C-7244968FC18D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -141,6 +155,7 @@ Global
 		{0E6003CE-C24E-41A5-9D4F-00B1121089A9} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{D73B6FC2-6781-4D0B-87BC-DBC74816683D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{76EEEE2A-355F-491D-A23B-D4887FB6F362} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{4434621A-E123-9D8C-570C-7244968FC18D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1109144-A97E-4A82-A404-CE79C327AA38}

@@ -374,3 +374,4 @@ secrets/
 **/secrets.json
 src/**/appsettings.Local.json
 src/**/appsettings.Development.local.json
+/.github

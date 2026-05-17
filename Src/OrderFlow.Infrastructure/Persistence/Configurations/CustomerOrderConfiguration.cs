@@ -11,6 +11,8 @@ namespace OrderFlow.Infrastructure.Persistence.Configurations
             builder.HasKey(c => c.Id);
             builder.Property(c => c.CustomerUserId).IsRequired();
             builder.Property(c => c.RestaurantId).IsRequired();
+            builder.Property(c => c.RestaurantName).IsRequired().HasMaxLength(100);
+
             builder.Property(c => c.TotalAmount).HasColumnType("decimal(18,2)");
 
             builder.Navigation(c => c.OrderItems).UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -19,9 +21,6 @@ namespace OrderFlow.Infrastructure.Persistence.Configurations
                 .WithOne()
                 .HasForeignKey(oi => oi.CustomerOrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Ignore(c => c.TotalAmount);
-
         }
     }
 }

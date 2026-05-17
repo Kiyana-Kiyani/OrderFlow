@@ -1,131 +1,168 @@
+using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using OrderFlow.Application.Configuration;
-using OrderFlow.Infrastructure.Identity;
+using Microsoft.OpenApi.Models;
+using OrderFlow.Api.Consumers;
+using OrderFlow.Api.Middleware;
+using OrderFlow.Api.Swagger;
+using OrderFlow.Application;
+using OrderFlow.Infrastructure.DependencyInjection;
 using OrderFlow.Infrastructure.Persistence;
-using RabbitMQ.Client;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using OrderFlow.Infrastructure.Persistence.Seed;
+using Serilog;
 
 namespace OrderFlow.Api
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .CreateBootstrapLogger();
 
-            var builder = WebApplication.CreateBuilder(args);
-
-            //Cnfiguration 
-            var rabbit = builder.Configuration.GetSection("RabbitMQ").Get<RabbitOptions>() ??
-                throw new InvalidOperationException("RabbitMQ configuration is missing.");
-
-            //Services
-            builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("Default")!));
-
-            builder.Services.AddIdentity<AppIdentityUser, IdentityRole<Guid>>(options =>
+            try
             {
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = true;
-                options.Password.RequiredLength = 6;
-                options.Password.RequiredUniqueChars = 1;
-            }).AddEntityFrameworkStores<ApplicationDbContext>();
+                Log.Information("Starting web application...");
 
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                var builder = WebApplication.CreateBuilder(args);
 
-            }).AddJwtBearer(options =>
-                {
-                    options.SaveToken = true;
-                    options.RequireHttpsMetadata = false;
-                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+                builder.Host.UseSerilog((context, services, configuration) => configuration
+                        .MinimumLevel.Information()
+                        .Enrich.FromLogContext()
+                        .Enrich.WithProperty("Application", "OrderApi")
+                        .ReadFrom.Services(services)
+                        .WriteTo.Console()
+                        .WriteTo.Seq(context.Configuration["Seq:Url"]!));
+
+                builder.Services.AddInfrastructure(builder.Configuration,
+                    configureConsumers: x =>
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                        ValidAudience = builder.Configuration["Jwt:Audience"],
-                        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
-                        ClockSkew = TimeSpan.FromMinutes(1),
-                    };
+                        x.AddConsumer<PaymentSucceededConsumer>();
+                        x.AddConsumer<PaymentFailedConsumer>();
+                    },
+
+                    configureRabbitMqEndpoints: (context, cfg) =>
+                    {
+                        cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
+                        {
+                            e.SetQuorumQueue();
+                            e.ConfigureConsumeTopology = false;
+                            e.Bind("Payment.Result", s =>
+                            {
+                                s.RoutingKey = "order.placed.*";
+                                s.ExchangeType = "topic";
+                            });
+
+                            e.ConfigureConsumer<PaymentSucceededConsumer>(context);
+                            e.ConfigureConsumer<PaymentFailedConsumer>(context);
+                        });
+                    });
+
+                builder.Services.AddApplication();
+
+                builder.Services.AddControllers();
+                builder.Services.AddEndpointsApiExplorer();
+                builder.Services.AddSwaggerGen(options =>
+                {
+                    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        In = ParameterLocation.Header,
+                        Description = "Please enter a valid token",
+                        BearerFormat = "JWT",
+                        Scheme = "Bearer",
+                        Name = "Authorization",
+                        Type = SecuritySchemeType.Http,
+
+                    });
+                    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                    });
+
+                    options.OperationFilter<GlobalExceptionOperationFilter>();
                 });
 
-            builder.Services.Configure<RabbitOptions>(builder.Configuration.GetSection("RabbitMQ"));
+                builder.Services.AddHealthChecks()
+                    .AddSqlServer(
+                        builder.Configuration.GetConnectionString("Default")!,
+                        failureStatus: HealthStatus.Unhealthy,
+                        name: "sqlserver",
+                        tags: new[] { "ready" });
 
+                var app = builder.Build();
 
-            if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-                   string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0 )
+                app.UseMiddleware<GlobalExceptionMiddleware>();
+
+                app.UseSerilogRequestLogging();
+
+                using (var scope = app.Services.CreateScope())
                 {
-                    throw new InvalidOperationException("RabbitMQ configuration is invalid.");
+                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    if (app.Environment.IsDevelopment())
+                    {
+                        dbContext.Database.Migrate();
+                    }
                 }
-          
-            builder.Services.AddSingleton<IConnection>(sp =>
-              {
-                  var factory = new ConnectionFactory
-                  {
-                      HostName = rabbit.Host,
-                      Port = rabbit.Port,
-                      UserName = rabbit.Username,
-                      Password = rabbit.Password
-                  };
-                  return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-              });
 
+                if (app.Environment.IsDevelopment())
+                {
+                    app.UseSwagger();
+                    app.UseSwaggerUI();
 
-            builder.Services.AddHealthChecks()
-                .AddSqlServer(
-                    builder.Configuration.GetConnectionString("Default")!,
-                    failureStatus: HealthStatus.Unhealthy,
-                    name: "sqlserver",
-                    tags: new[] { "ready" })
-                .AddRabbitMQ(
-                    sp => sp.GetRequiredService<IConnection>(),
-                    failureStatus: HealthStatus.Unhealthy,
-                    name: "rabbitmq",
-                    tags: new[] { "ready" }
-                );
+                    await IdentityDataSeeder.RoleSeederAsync(app.Services);
+                    await IdentityDataSeeder.AdminSeederAsync(app.Services);
+                }
+                if (app.Environment.IsEnvironment("Testing"))
+                {
+                    using (var scope = app.Services.CreateScope())
+                    {
+                        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                        await dbContext.Database.MigrateAsync();
+                    }
 
+                    await IdentityDataSeeder.RoleSeederAsync(app.Services);
+                    await IdentityDataSeeder.AdminSeederAsync(app.Services);
+                }
 
+                app.UseHttpsRedirection();
+                app.UseAuthentication();
+                app.UseAuthorization();
+                app.MapControllers();
 
-            var app = builder.Build();
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
+                app.MapHealthChecks("/health/live", new HealthCheckOptions
+                {
+                    Predicate = _ => false
+                });
+
+                app.MapHealthChecks("/health/ready", new HealthCheckOptions
+                {
+                    Predicate = healthCheck => healthCheck.Tags.Contains("ready")
+                });
+
+                app.Run();
             }
-
-
-            app.UseHttpsRedirection();
-            app.UseRouting();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-            app.MapControllers();
-
-
-            app.MapHealthChecks("/health/live", new HealthCheckOptions
+            catch (Exception ex)
             {
-                Predicate = _ => false
-            });
-
-            app.MapHealthChecks("/health/ready", new HealthCheckOptions
+                Log.Fatal(ex, "Application terminated unexpectedly");
+                throw;
+            }
+            finally
             {
-                Predicate = healthCheck => healthCheck.Tags.Contains("ready")
-            });
-
-            app.Run();
+                Log.CloseAndFlush();
+            }
         }
     }
 }

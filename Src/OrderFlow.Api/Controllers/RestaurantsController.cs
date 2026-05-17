@@ -1,42 +1,121 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using OrderFlow.Application.Features.Resturant.ActivateRestaurant;
+using OrderFlow.Application.Features.Resturant.ChangeRestaurantAddress;
+using OrderFlow.Application.Features.Resturant.ChangeRestaurantDescription;
+using OrderFlow.Application.Features.Resturant.ChangeRestaurantName;
+using OrderFlow.Application.Features.Resturant.CreateRestaurant;
+using OrderFlow.Application.Features.Resturant.DeactivateRestaurant;
+using OrderFlow.Application.Features.Resturant.GetResturantById;
+using OrderFlow.Application.Features.Resturant.GetResturants;
+using OrderFlow.Application.Features.Resturant.RemoveResturant;
 
 
 namespace OrderFlow.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class RestaurantsController : ControllerBase
     {
-        // GET: api/<RestaurantsController>
+        private readonly ISender _sender;
+        public RestaurantsController(ISender sender)
+        {
+            _sender = sender;
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(IEnumerable<GetRestaurantsResponse>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<GetRestaurantsResponse>>> GetAll(CancellationToken cancellationToken)
         {
-            return new string[] { "value1", "value2" };
+            var response = await _sender.Send(new GetRestaurantsQuery(), cancellationToken);
+            return Ok(response);
         }
 
-        // GET api/<RestaurantsController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(GetRestaurantByIdResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<GetRestaurantByIdResponse>> GetById(Guid id, CancellationToken cancellationToken)
         {
-            return "value";
+            var response = await _sender.Send(new GetRestaurantByIdQuery(id), cancellationToken);
+            return Ok(response);
         }
 
-        // POST api/<RestaurantsController>
+        [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new RemoveRestaurantByIdCommand(id), cancellationToken);
+            return Ok();
+        }
+
         [HttpPost]
-        public void Post([FromBody] string value)
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(CreateRestaurantResponse), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<CreateRestaurantResponse>> Create([FromBody] CreateRestaurantCommand createRestaurantCommand, CancellationToken cancellationToken)
         {
+            var response = await _sender.Send(createRestaurantCommand, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = response.RestaurantId }, response);
         }
 
-        // PUT api/<RestaurantsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPatch("{restaurantId:guid}/address")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ChangeAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
         {
+            await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
+            return NoContent();
         }
 
-        // DELETE api/<RestaurantsController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPatch("{restaurantId:guid}/activate")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Activate(Guid restaurantId, CancellationToken cancellationToken)
         {
+            await _sender.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPatch("{restaurantId:guid}/deactivate")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Deactivate(Guid restaurantId, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPatch("{restaurantId:guid}/description")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ChangeDescription(Guid restaurantId, [FromBody] string newDescription, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new ChangeRestaurantDescriptionCommand(restaurantId, newDescription), cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPatch("{restaurantId:guid}/name")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ChangeName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new ChangeRestaurantNameCommand(restaurantId, newName), cancellationToken);
+            return NoContent();
         }
     }
 }
