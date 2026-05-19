@@ -1,15 +1,17 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OrderFlow.Application.Features.Resturant.ActivateRestaurant;
-using OrderFlow.Application.Features.Resturant.ChangeRestaurantAddress;
-using OrderFlow.Application.Features.Resturant.ChangeRestaurantDescription;
-using OrderFlow.Application.Features.Resturant.ChangeRestaurantName;
-using OrderFlow.Application.Features.Resturant.CreateRestaurant;
-using OrderFlow.Application.Features.Resturant.DeactivateRestaurant;
-using OrderFlow.Application.Features.Resturant.GetResturantById;
-using OrderFlow.Application.Features.Resturant.GetResturants;
-using OrderFlow.Application.Features.Resturant.RemoveResturant;
+using OrderFlow.Application.Features.Restaurant.ActivateRestaurant;
+using OrderFlow.Application.Features.Restaurant.ChangeRestaurantAddress;
+using OrderFlow.Application.Features.Restaurant.ChangeRestaurantDescription;
+using OrderFlow.Application.Features.Restaurant.ChangeRestaurantName;
+using OrderFlow.Application.Features.Restaurant.CreateRestaurant;
+using OrderFlow.Application.Features.Restaurant.DeactivateRestaurant;
+using OrderFlow.Application.Features.Restaurant.GetRestaurantById;
+using OrderFlow.Application.Features.Restaurant.GetRestaurants;
+using OrderFlow.Application.Features.Restaurant.MarkOrderReadyForPickup;
+using OrderFlow.Application.Features.Restaurant.RemoveRestaurant;
+using OrderFlow.Application.Features.Restaurant.StartPreparingOrder;
 
 
 namespace OrderFlow.Api.Controllers
@@ -115,6 +117,37 @@ namespace OrderFlow.Api.Controllers
         public async Task<IActionResult> ChangeName(Guid restaurantId, [FromBody] string newName, CancellationToken cancellationToken)
         {
             await _sender.Send(new ChangeRestaurantNameCommand(restaurantId, newName), cancellationToken);
+            return NoContent();
+        }
+
+
+
+
+
+
+        // Add these using statements at the top if they are missing:
+        // using OrderFlow.Application.Features.Restaurant.UpdateOrderToPreparing;
+        // using OrderFlow.Application.Features.Restaurant.MarkOrderReadyForPickup;
+
+        [HttpPost("orders/{orderId:guid}/preparing")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> MoveToPreparing([FromRoute] Guid orderId, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new StartPreparingOrderCommand(orderId), cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPost("orders/{orderId:guid}/ready-for-pickup")]
+        [Authorize(Roles = "Admin,Owner")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> MarkReadyForPickup([FromRoute] Guid orderId, CancellationToken cancellationToken)
+        {
+            await _sender.Send(new MarkOrderReadyForPickupCommand(orderId), cancellationToken);
             return NoContent();
         }
     }

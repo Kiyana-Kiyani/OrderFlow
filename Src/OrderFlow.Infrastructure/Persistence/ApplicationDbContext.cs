@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
@@ -8,7 +9,7 @@ using OrderFlow.Infrastructure.Persistence.Configurations;
 
 namespace OrderFlow.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid> , IApplicationDbContext
+    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -33,6 +34,7 @@ namespace OrderFlow.Infrastructure.Persistence
             builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
 
             builder.ApplyConfigurationsFromAssembly(typeof(RestaurantConfiguration).Assembly);
+            builder.AddTransactionalOutboxEntities();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

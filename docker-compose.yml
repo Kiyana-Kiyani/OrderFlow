@@ -25,6 +25,7 @@ services:
       Jwt__Issuer: ${JwtIssuer}
       Jwt__SecretKey: ${JwtSecretKey}
       Jwt__ExpirationMinutes: ${JwtExpirationMinutes}
+      Jwt__RefreshTokenExpirationDays: ${JwtRefreshTokenExpirationDays}
       # Seq
       Seq__Url: http://seq:5341
 

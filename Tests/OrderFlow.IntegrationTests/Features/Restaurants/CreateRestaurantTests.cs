@@ -1,6 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using OrderFlow.Application.Features.Resturant.CreateRestaurant;
+using OrderFlow.Application.Features.Restaurant.CreateRestaurant;
 using System.Net;
 using System.Net.Http.Json;
 namespace OrderFlow.IntegrationTests.Features.Restaurants

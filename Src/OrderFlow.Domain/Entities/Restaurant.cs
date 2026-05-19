@@ -1,4 +1,4 @@
-﻿using OrderFlow.Domain.Exceptions.Restauramt;
+﻿using OrderFlow.Domain.Exceptions.Restaurant;
 
 namespace OrderFlow.Domain.Entities
 {

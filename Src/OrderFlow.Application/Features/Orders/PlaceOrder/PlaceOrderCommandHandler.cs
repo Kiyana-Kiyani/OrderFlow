@@ -59,16 +59,39 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
                     order.AddOrderItem(item.Quantity, menuItem.Price, item.MenuItemId, menuItem.Name);
             }
             await _dbContext.CustomerOrders.AddAsync(order);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            var orderPlaceEvent = OrderPlacedIntegrationEvent.
+                   CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
+            //If you don't write that line, you face a direct wall because your application
+            //layer only knows about the interface IApplicationDbContext.
+            // Interfaces are great for keeping your code decoupled,
+            // but they only let you see what you explicitly declared inside them.
+
+            if (_dbContext is DbContext efDbContext)
+            {
+                using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
+                try
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                    await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Transaction failed for Order {OrderId}. Rolling back changes.", order.Id);
+                    await transaction.RollbackAsync(cancellationToken);
+                    throw;
+                }
+            }
+            else
+            {
+                // Fallback layer safety if interface isn't a backing DbContext instance
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
+            }
 
             _logger.LogInformation(
                 "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",
                 order.Id, _currentUser.UserId, request.RestaurantId, order.TotalAmount, request.Items.Count);
-
-            var orderPlaceEvent = OrderPlacedIntegrationEvent.
-                CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
-
-            await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

@@ -32,8 +32,6 @@ namespace OrderFlow.Workers.Payment.Consumers
                     , x => x.SetRoutingKey("order.placed.failed"));
             }
         }
-
-
     }
 }
 

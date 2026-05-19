@@ -2,10 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using OrderFlow.Application.Features.Resturant.CreateRestaurant;
+using OrderFlow.Application.Features.Restaurant.CreateRestaurant;
 using OrderFlow.Infrastructure.Persistence;
 
-namespace OrderFlow.UnitTests.Features.Resturant
+namespace OrderFlow.UnitTests.Features.Restaurant
 {
     public class CreateRestaurantCommandHandlerTests : IAsyncDisposable
     {

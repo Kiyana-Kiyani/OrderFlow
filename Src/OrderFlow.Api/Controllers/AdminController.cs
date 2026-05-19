@@ -65,24 +65,5 @@ namespace OrderFlow.Api.Controllers
             return NoContent();
         }
 
-        //[HttpPost("restaurants/{restaurantId:guid}/activate")]
-        //[ProducesResponseType(StatusCodes.Status204NoContent)]
-        //public async Task<IActionResult> ActivateRestaurant([FromRoute] Guid restaurantId, CancellationToken cancellationToken)
-        //{
-        //    await _sender.Send(new ActivateRestaurantCommand(restaurantId), cancellationToken);
-
-        //    return NoContent();
-        //}
-
-        //[HttpPost("restaurants/{restaurantId:guid}/deactivate")]
-        //[ProducesResponseType(StatusCodes.Status204NoContent)]
-        //public async Task<IActionResult> DeactivateRestaurant([FromRoute] Guid restaurantId, CancellationToken cancellationToken)
-        //{
-        //    await _sender.Send(new DeactivateRestaurantCommand(restaurantId), cancellationToken);
-
-        //    return NoContent();
-        //}
-
-
     }
 }

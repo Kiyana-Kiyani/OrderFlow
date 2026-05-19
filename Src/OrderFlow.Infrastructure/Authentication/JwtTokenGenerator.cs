@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions.Authentication;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace OrderFlow.Infrastructure.Authentication
@@ -30,6 +31,13 @@ namespace OrderFlow.Infrastructure.Authentication
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        public string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
         }
 
         private async Task<Claim[]> CreateClaimsAsync(Guid id, string email, IEnumerable<string> roles)

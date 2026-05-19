@@ -1,8 +1,10 @@
-﻿using System.Net;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OrderFlow.Api.Contracts.Auth;
 using OrderFlow.Application.Features.Auth.Login;
+using OrderFlow.Application.Features.Auth.RefreshToken;
 using OrderFlow.Application.Features.Auth.Register;
+using System.Net;
 namespace OrderFlow.Api.Controllers
 {
     [ApiController]
@@ -48,7 +50,21 @@ namespace OrderFlow.Api.Controllers
                     );
 
 
-            return Ok(new LoginUserResponse(result.UserId!.Value, result.Token!));
+            return Ok(new LoginUserResponse(result.UserId!.Value, result.Token!, result.RefreshToken!));
+        }
+
+        [HttpPost("refresh")]
+        [ProducesResponseType(typeof(LoginUserResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        {
+            // Assuming your MediatR RefreshTokenCommand routes directly to AuthService.RefreshTokenAsync
+            var result = await _sender.Send(new RefreshTokenCommand(request.ExpiredToken, request.RefreshToken), cancellationToken);
+
+            if (!result.Succeeded)
+                return Unauthorized(result.Error);
+
+            return Ok(new LoginUserResponse(result.UserId!.Value, result.Token!, result.RefreshToken!));
         }
     }
 }

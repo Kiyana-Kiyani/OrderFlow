@@ -71,7 +71,7 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                     ValidAudience = jwtOptions.Audience,
 
                     IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
-                    ClockSkew = TimeSpan.FromMinutes(1),
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
@@ -82,6 +82,12 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             var rabbitMq = configuration.GetSection("RabbitMQ");
             services.AddMassTransit(x =>
             {
+                //Tell MassTransit to use your existing DbContext for storing outbox rows
+                x.AddEntityFrameworkOutbox<ApplicationDbContext>(o =>
+                {
+                    o.UseSqlServer();
+                    o.UseBusOutbox();// Automates message dispatching from the outbox table to RabbitMQ
+                });
                 configureConsumers?.Invoke(x);
 
                 x.UsingRabbitMq((context, cfg) =>
