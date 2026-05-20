@@ -1,6 +1,6 @@
 ﻿using MassTransit;
 using MediatR;
-using OrderFlow.Application.Features.Orders.UpdateOrderStatus;
+using OrderFlow.Application.Features.Orders.UpdatePaymentStatus;
 using OrderFlow.Contracts.IntegrationEvents;
 
 namespace OrderFlow.Api.Consumers
@@ -17,7 +17,7 @@ namespace OrderFlow.Api.Consumers
         public async Task Consume(ConsumeContext<PaymentSucceededIntegrationEvent> context)
         {
             var message = context.Message;
-            var command = new UpdateOrderStatusCommand(message.OrderId);
+            var command = new UpdatePaymentStatusCommand(message.OrderId, true);
             await _sender.Send(command);
         }
     }

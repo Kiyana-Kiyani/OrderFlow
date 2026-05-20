@@ -1,21 +1,24 @@
 ﻿using MassTransit;
+using MediatR;
+using OrderFlow.Application.Features.Orders.UpdatePaymentStatus;
 using OrderFlow.Contracts.IntegrationEvents;
 
 namespace OrderFlow.Api.Consumers
 {
     public class PaymentFailedConsumer : IConsumer<PaymentFailedIntegrationEvent>
     {
-        ILogger<PaymentFailedConsumer> _logger;
+        private readonly ISender _sender;
 
-        public PaymentFailedConsumer(ILogger<PaymentFailedConsumer> logger)
+        public PaymentFailedConsumer(ISender sender)
         {
-            _logger = logger;
+            _sender = sender;
         }
-        public Task Consume(ConsumeContext<PaymentFailedIntegrationEvent> context)
+
+        public async Task Consume(ConsumeContext<PaymentFailedIntegrationEvent> context)
         {
             var message = context.Message;
-            _logger.LogInformation("PaymentFailedConsumer created {0}", message);
-            return Task.CompletedTask;
+            var command = new UpdatePaymentStatusCommand(message.OrderId, false);
+            await _sender.Send(command);
         }
     }
 }
