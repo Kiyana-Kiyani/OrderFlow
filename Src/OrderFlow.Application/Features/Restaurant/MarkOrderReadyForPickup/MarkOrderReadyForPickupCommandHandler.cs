@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
+using OrderFlow.Contracts.IntegrationEvents;
 
 namespace OrderFlow.Application.Features.Restaurant.MarkOrderReadyForPickup;
 
@@ -42,19 +43,13 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
                 order.TransitionToReadyForPickup();
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
-                var integrationEvent = new OrderReadyForPickupIntegrationEvent
-                {
-                    OrderId = order.Id,
-                    RestaurantId = order.RestaurantId,
-                    RestaurantName = order.RestaurantName,
-                    ReadyAt = DateTime.UtcNow
-                };
+                var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(order.Id, order.RestaurantId, order.RestaurantName, DateTime.UtcNow);
 
                 // Publish using a custom logistics key string
                 await _publishEndpoint.Publish(integrationEvent, ctx => ctx.SetRoutingKey("order.ready"), cancellationToken);
 
                 // 3. Save both to the database at the exact same millisecond
-                await transaction.CommitAsync(cancellationToken)
+                await transaction.CommitAsync(cancellationToken);
 
             }
             catch (Exception ex)
