@@ -8,6 +8,7 @@ using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
 using OrderFlow.Application;
 using OrderFlow.Infrastructure.DependencyInjection;
+using OrderFlow.Infrastructure.Notifications;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
 using Serilog;
@@ -141,6 +142,10 @@ namespace OrderFlow.Api
                 app.UseAuthentication();
                 app.UseAuthorization();
                 app.MapControllers();
+
+                // ... down below where you call app.UseEndpoints or app.MapControllers():
+                app.MapHub<OrderHub>("/hubs/orders"); // 2. Map the physical WebSocket route endpoint
+
 
                 app.MapHealthChecks("/health/live", new HealthCheckOptions
                 {

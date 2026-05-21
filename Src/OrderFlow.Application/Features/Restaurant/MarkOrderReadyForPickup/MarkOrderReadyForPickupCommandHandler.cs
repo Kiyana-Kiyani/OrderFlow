@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using MassTransit;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Application.Abstractions;
@@ -9,11 +10,14 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ILogger<MarkOrderReadyForPickupCommandHandler> _logger;
+    private readonly IPublishEndpoint _publishEndpoint;
 
-    public MarkOrderReadyForPickupCommandHandler(IApplicationDbContext dbContext, ILogger<MarkOrderReadyForPickupCommandHandler> logger)
+    public MarkOrderReadyForPickupCommandHandler(IApplicationDbContext dbContext, ILogger<MarkOrderReadyForPickupCommandHandler> logger,
+        IPublishEndpoint publishEndpoint)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<MarkOrderReadyForPickupResponse> Handle(MarkOrderReadyForPickupCommand request, CancellationToken cancellationToken)
@@ -28,9 +32,45 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
         }
 
         // Transition domain state (This method inside Domain layer should also raise your OrderReadyForPickupDomainEvent)
-        order.TransitionToReadyForPickup();
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        if (_dbContext is DbContext efDbContext)
+        {
+
+            using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                order.TransitionToReadyForPickup();
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                var integrationEvent = new OrderReadyForPickupIntegrationEvent
+                {
+                    OrderId = order.Id,
+                    RestaurantId = order.RestaurantId,
+                    RestaurantName = order.RestaurantName,
+                    ReadyAt = DateTime.UtcNow
+                };
+
+                // Publish using a custom logistics key string
+                await _publishEndpoint.Publish(integrationEvent, ctx => ctx.SetRoutingKey("order.ready"), cancellationToken);
+
+                // 3. Save both to the database at the exact same millisecond
+                await transaction.CommitAsync(cancellationToken)
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while marking order {OrderId} as ready for pickup. Transaction is being rolled back.", order.Id);
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+
+        }
+        else
+        {
+
+        }
+
 
         _logger.LogInformation("Order {OrderId} has been marked as Ready For Pickup and logged successfully.", order.Id);
 

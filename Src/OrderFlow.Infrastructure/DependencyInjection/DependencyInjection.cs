@@ -11,6 +11,7 @@ using OrderFlow.Application.Configuration;
 using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Infrastructure.Authentication;
 using OrderFlow.Infrastructure.Identity;
+using OrderFlow.Infrastructure.Notifications;
 using OrderFlow.Infrastructure.Persistence;
 
 
@@ -107,6 +108,11 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                     configureRabbitMqEndpoints?.Invoke(context, cfg);
                 });
             });
+
+
+            // 1. Add SignalR and service dependency mapping to the container builder
+            services.AddSignalR();
+            services.AddScoped<IOrderNotificationService, OrderNotificationService>();
 
 
             //services.AddSingleton<IConnection>(sp =>

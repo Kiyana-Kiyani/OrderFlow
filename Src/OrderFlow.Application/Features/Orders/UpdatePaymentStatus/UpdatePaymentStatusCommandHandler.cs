@@ -10,11 +10,14 @@ namespace OrderFlow.Application.Features.Orders.UpdatePaymentStatus
     {
         private readonly ILogger<UpdatePaymentStatusCommandHandler> _logger;
         private readonly IApplicationDbContext _dbContext;
+        private readonly IOrderNotificationService _notificationService;
 
-        public UpdatePaymentStatusCommandHandler(ILogger<UpdatePaymentStatusCommandHandler> logger, IApplicationDbContext dbContext)
+        public UpdatePaymentStatusCommandHandler(ILogger<UpdatePaymentStatusCommandHandler> logger, IApplicationDbContext dbContext,
+            IOrderNotificationService notificationService)
         {
             _logger = logger;
             _dbContext = dbContext;
+            _notificationService = notificationService;
         }
 
         public async Task Handle(UpdatePaymentStatusCommand request, CancellationToken cancellationToken)
@@ -30,6 +33,12 @@ namespace OrderFlow.Application.Features.Orders.UpdatePaymentStatus
             {
                 order.MarkPaymentAsSucceeded();
                 _logger.LogInformation("Payment confirmed for Order {OrderId}. Status is ready for kitchen review.", order.Id);
+
+                // NEW: Push the live notification to the kitchen's active tablet/screen dashboard
+                await _notificationService.NotifyRestaurantOfNewOrderAsync(
+                    order.RestaurantId,
+                    order.Id,
+                    order.TotalAmount);
             }
             else
             {
