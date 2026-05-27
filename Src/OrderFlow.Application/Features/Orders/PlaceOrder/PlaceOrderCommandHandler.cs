@@ -36,7 +36,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             if (restaurant is null)
                 throw new NotFoundException("Restaurant", request.RestaurantId);
 
-            var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name);
+            var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name, request.CustomerAddress, request.CustomerLatitude, request.CustomerLongitude);
 
             var menuItemIds = request.Items.Select(c => c.MenuItemId).Distinct().ToList();
 

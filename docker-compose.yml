@@ -106,6 +106,21 @@ services:
 
     
 
+  redis:
+    container_name: orderflow_redis
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+
   orderflow.workers.payment:
     image: ${DOCKER_REGISTRY-}orderflowworkerspayment
     build:
@@ -127,6 +142,34 @@ services:
        seq:
         condition: service_healthy
 
+
+
+  courier-worker:
+    container_name: orderflow_courier_worker
+    image: orderflow-courierworker:latest
+    build:
+      context: .
+      dockerfile: OrderFlow.Worker.Courier/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy # Wait until diagnostics ping succeeds
+      seq:
+        condition: service_healthy # Wait until web health check returns HTTP 200
+      redis:
+        condition: service_healthy # Wait until redis-cli ping succeeds
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      # RabbitMQ
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Port: 5672
+      RabbitMQ__VirtualHost: /
+      RabbitMQ__Username: ${RabbitMQ_Username}
+      RabbitMQ__Password: ${RabbitMQ_Password}
+      # Seq
+      Seq__Url: http://seq:5341
+      #Redis
+      Redis__ConnectionString: orderflow_redis:6379
+    restart: on-failure
 
 volumes:
   sql_data:

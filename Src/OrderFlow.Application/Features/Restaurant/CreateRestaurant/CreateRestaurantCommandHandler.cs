@@ -22,7 +22,9 @@ namespace OrderFlow.Application.Features.Restaurant.CreateRestaurant
                 name: request.Name,
                 address: request.Address,
                 description: request.Description,
-                ownerUserId: request.OwnerId
+                ownerUserId: request.OwnerId,
+                latitude: request.Latitude,
+                longitude: request.Longitude
             );
 
             _dbContext.Restaurants.Add(restaurant);

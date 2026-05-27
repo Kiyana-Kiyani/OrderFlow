@@ -7,19 +7,22 @@ namespace OrderFlow.Domain.Entities
     {
         private readonly List<OrderItem> _orderItems = new();
 
-        private CustomerOrder() { }
-        public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName)
+        public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName, string customerAddress, double customerLatitude, double customerLongitude)
         {
             if (customerUserId == Guid.Empty) throw new ArgumentException("Customer is required.", nameof(customerUserId));
             if (restaurantId == Guid.Empty) throw new ArgumentException("Restaurant is required.", nameof(restaurantId));
             Id = Guid.NewGuid();
             CustomerUserId = customerUserId;
+            CustomerAddress = customerAddress;
+            CustomerLatitude = customerLatitude;
+            CustomerLongitude = customerLongitude;
             RestaurantId = restaurantId;
             RestaurantName = restaurantName;
             Status = OrderStatus.Created;
             CreatedAt = DateTime.UtcNow;
             Payment = PaymentStatus.Pending;
         }
+        private CustomerOrder() { }
 
         public Guid Id { get; private set; }
         public Guid CustomerUserId { get; private set; }
@@ -30,6 +33,9 @@ namespace OrderFlow.Domain.Entities
         public PaymentStatus Payment { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public decimal TotalAmount { get; private set; }
+        public string CustomerAddress { get; private set; } = default!;
+        public double CustomerLatitude { get; private set; }
+        public double CustomerLongitude { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems;
 
 

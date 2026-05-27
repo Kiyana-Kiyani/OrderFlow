@@ -2,6 +2,6 @@
 
 namespace OrderFlow.Application.Features.Restaurant.CreateRestaurant
 {
-    public record CreateRestaurantCommand(string Name, string Address, string? Description, Guid OwnerId)
+    public record CreateRestaurantCommand(string Name, string Address, string? Description, Guid OwnerId, double Latitude, double Longitude)
         : IRequest<CreateRestaurantResponse>;
 }

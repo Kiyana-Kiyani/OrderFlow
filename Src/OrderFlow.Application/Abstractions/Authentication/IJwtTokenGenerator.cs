@@ -2,7 +2,7 @@
 {
     public interface IJwtTokenGenerator
     {
-        Task<string> GenerateTokenAsync(Guid id, string email, IEnumerable<string> roles);
+        string GenerateToken(Guid id, string email, IEnumerable<string> roles, Dictionary<string, string>? customClaims = null);
         string GenerateRefreshToken();
     }
 }

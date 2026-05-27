@@ -2,4 +2,4 @@
 
 namespace OrderFlow.Application.Features.Restaurant.MarkOrderReadyForPickup;
 
-public record MarkOrderReadyForPickupCommand(Guid OrderId) : IRequest<MarkOrderReadyForPickupResponse>;
+public record MarkOrderReadyForPickupCommand(Guid OrderId, Guid RestaurantId) : IRequest<MarkOrderReadyForPickupResponse>;

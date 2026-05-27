@@ -5,6 +5,7 @@ using OrderFlow.Application.Features.Couriers.AcceptDelivery;
 using OrderFlow.Application.Features.Couriers.CompleteDelivery;
 using OrderFlow.Application.Features.Couriers.GetAvailableJobs;
 using OrderFlow.Application.Features.Couriers.PickupOrder;
+using OrderFlow.Application.Features.Couriers.UpdateLocation;
 
 namespace OrderFlow.Api.Controllers;
 
@@ -18,6 +19,15 @@ public class CouriersController : ControllerBase
     public CouriersController(ISender sender)
     {
         _sender = sender;
+    }
+
+    [HttpPost("update-location")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateLocation([FromBody] UpdateLocationCommand command, CancellationToken cancellationToken)
+    {
+        await _sender.Send(command, cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("available-jobs")]

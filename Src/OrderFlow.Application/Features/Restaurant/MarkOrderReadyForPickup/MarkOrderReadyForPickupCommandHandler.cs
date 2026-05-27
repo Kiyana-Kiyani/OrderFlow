@@ -25,11 +25,19 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
     {
         var order = await _dbContext.CustomerOrders
             .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
+        var restaurant = await _dbContext.Restaurants
+            .FirstOrDefaultAsync(r => r.Id == request.RestaurantId, cancellationToken);
 
         if (order is null)
         {
             _logger.LogWarning("Failed to mark order ready for pickup. Order {OrderId} was not found.", request.OrderId);
             throw new KeyNotFoundException($"Order with ID {request.OrderId} was not found.");
+        }
+
+        if (restaurant is null)
+        {
+            _logger.LogWarning("Failed to mark order ready for pickup. Restaurant {RestaurantId} was not found.", request.RestaurantId);
+            throw new KeyNotFoundException($"Restaurant with ID {request.RestaurantId} was not found.");
         }
 
         // Transition domain state (This method inside Domain layer should also raise your OrderReadyForPickupDomainEvent)
@@ -40,15 +48,25 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
             using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
+
+                // 1. Transition the core domain state
                 order.TransitionToReadyForPickup();
+
+                // 2. Create your integration contract matching pure MassTransit defaults
+                var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(
+                    order.Id, order.RestaurantId, order.RestaurantName, DateTime.UtcNow,
+                    restaurant.Address, restaurant.Latitude, restaurant.Longitude,
+                    order.CustomerAddress, order.CustomerLatitude, order.CustomerLongitude);
+
+                // 3. FIX: Publish BEFORE SaveChangesAsync.
+                // Outbox intercepts this and adds internal event entities into the EF Change Tracker.
+                await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+
+                // 4. Persist BOTH the order change and the outbox events to the DB in one atomic payload
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
-                var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(order.Id, order.RestaurantId, order.RestaurantName, DateTime.UtcNow);
 
-                // Publish using a custom logistics key string
-                await _publishEndpoint.Publish(integrationEvent, ctx => ctx.SetRoutingKey("order.ready"), cancellationToken);
-
-                // 3. Save both to the database at the exact same millisecond
+                // 5. Commit safely
                 await transaction.CommitAsync(cancellationToken);
 
             }
@@ -63,7 +81,19 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
         }
         else
         {
+            // Fallback block to ensure testability if running unit tests with mock contexts
+            order.TransitionToReadyForPickup();
 
+            var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(
+                order.Id,
+                order.RestaurantId,
+                order.RestaurantName,
+                DateTime.UtcNow, restaurant.Address, restaurant.Latitude, restaurant.Longitude,
+                order.CustomerAddress, order.CustomerLatitude, order.CustomerLongitude
+                );
+
+            await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
 

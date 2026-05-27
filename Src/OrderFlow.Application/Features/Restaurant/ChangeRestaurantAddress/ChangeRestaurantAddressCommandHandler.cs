@@ -35,10 +35,10 @@ namespace OrderFlow.Application.Features.Restaurant.ChangeRestaurantAddress
             if (!authorizationResult.Succeeded)
                 throw new UnauthorizedAccessException("You are not allowed to edit this item.");
 
-            restaurant.ChangeAddress(request.NewAddress);
+            restaurant.ChangeAddress(request.NewAddress, request.NewLatitude, request.NewLongitude);
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Address of restaurant {RestaurantId} updated to '{NewAddress}' by user {UserId}.",
-               restaurant.Id, request.NewAddress, _currentUser.UserId);
+            _logger.LogInformation("Address of restaurant {RestaurantId} updated to '{NewAddress}' (Latitude: {NewLatitude}, Longitude: {NewLongitude}) by user {UserId}.",
+               restaurant.Id, request.NewAddress, request.NewLatitude, request.NewLongitude, _currentUser.UserId);
         }
     }
 }

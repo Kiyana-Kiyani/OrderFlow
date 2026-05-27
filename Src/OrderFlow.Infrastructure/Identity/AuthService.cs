@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Models;
 using OrderFlow.Infrastructure.Authentication;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace OrderFlow.Infrastructure.Identity
 {
@@ -16,14 +18,16 @@ namespace OrderFlow.Infrastructure.Identity
         private readonly SignInManager<AppIdentityUser> _signInManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
         private readonly JwtOptions _jwtOptions;
+        private readonly IApplicationDbContext _dbContext; // 👈 اضافه شد
 
         public AuthService(UserManager<AppIdentityUser> userManager, SignInManager<AppIdentityUser> signInManager,
-            IJwtTokenGenerator jwtTokenGenerator, IOptions<JwtOptions> jwtOptions)
+            IJwtTokenGenerator jwtTokenGenerator, IOptions<JwtOptions> jwtOptions, IApplicationDbContext dbContext)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _jwtTokenGenerator = jwtTokenGenerator;
             _jwtOptions = jwtOptions.Value;
+            _dbContext = dbContext;
         }
 
         public async Task<AuthResult> RegisterAsync(string email, string password, CancellationToken cancellationToken)
@@ -68,7 +72,11 @@ namespace OrderFlow.Infrastructure.Identity
         private async Task<AuthResult> GenerateAuthResultForUserAsync(AppIdentityUser user)
         {
             var roles = await _userManager.GetRolesAsync(user);
-            var token = await _jwtTokenGenerator.GenerateTokenAsync(user.Id, user.NormalizedEmail!, roles);
+            // 🛠️ استخراج کلیم‌های اختصاصی موقع لاگین یا ریجستر
+            var customClaims = await BuildCustomClaimsAsync(user.Id, roles);
+
+            // پاس دادن دیکشنری کلیم‌ها به توکن‌ساز
+            var token = _jwtTokenGenerator.GenerateToken(user.Id, user.NormalizedEmail!, roles, customClaims);
 
             var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
             user.RefreshToken = refreshToken;
@@ -94,13 +102,37 @@ namespace OrderFlow.Infrastructure.Identity
                 return AuthResult.Failure("Invalid or expired refresh token request.");
 
             var roles = await _userManager.GetRolesAsync(user);
-            var newAccessToken = await _jwtTokenGenerator.GenerateTokenAsync(user.Id, user.Email!, roles);
+            var customClaims = await BuildCustomClaimsAsync(user.Id, roles);
+            var newAccessToken = _jwtTokenGenerator.GenerateToken(user.Id, user.Email!, roles);
             var newRefreshToken = _jwtTokenGenerator.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
             await _userManager.UpdateAsync(user);
 
             return AuthResult.Success(newAccessToken, newRefreshToken, user.Id);
+        }
+
+        // 🎯 متد کمکی جدید برای ساخت کلیم‌های داینامیک و اختصاصی بدون کثیف کردن کلاس توکن‌ساز
+        private async Task<Dictionary<string, string>> BuildCustomClaimsAsync(Guid userId, IEnumerable<string> roles)
+        {
+            var customClaims = new Dictionary<string, string>();
+
+            if (roles.Contains("Owner"))
+            {
+                var restaurantId = await _dbContext.Restaurants
+                    .Where(r => r.OwnerUserId == userId)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                if (restaurantId != Guid.Empty)
+                {
+                    customClaims.Add("RestaurantId", restaurantId.ToString());
+                }
+            }
+
+            // اگر فردا روزی نقش پیک یا ادمین هم کلیم اختصاصی خواست، خیلی تمیز همین‌جا زیرش اضافه می‌کنی
+
+            return customClaims;
         }
 
         // Helper method to pull claims out of an already EXPIRED access token safely

@@ -145,9 +145,9 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> MarkReadyForPickup([FromRoute] Guid orderId, CancellationToken cancellationToken)
+        public async Task<IActionResult> MarkReadyForPickup([FromRoute] Guid orderId, [FromRoute] Guid restaurantId, CancellationToken cancellationToken)
         {
-            await _sender.Send(new MarkOrderReadyForPickupCommand(orderId), cancellationToken);
+            await _sender.Send(new MarkOrderReadyForPickupCommand(orderId, restaurantId), cancellationToken);
             return NoContent();
         }
     }
