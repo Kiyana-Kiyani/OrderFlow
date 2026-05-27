@@ -17,6 +17,8 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
             var command = new CreateRestaurantCommand(
                 Name: "Integration Grill",
                 Address: "Docker Street 10",
+                Latitude: 40.7128,
+                Longitude: -74.0060,
                 Description: "Testing with real SQL",
                 OwnerId: Guid.NewGuid()
             );
@@ -40,6 +42,8 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
             var command = new CreateRestaurantCommand(
                 Name: "",
                 Address: "Docker Street 10",
+                Latitude: 40.7128,
+                Longitude: -74.0060,
                 Description: "Testing with real SQL",
                 OwnerId: Guid.NewGuid()
             );
@@ -63,6 +67,8 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
             var command = new CreateRestaurantCommand(
                 Name: "Integration Grill",
                 Address: "Docker Street 10",
+                Latitude: 40.7128,
+                Longitude: -74.0060,
                 Description: "Testing with real SQL",
                 OwnerId: Guid.NewGuid()
             );

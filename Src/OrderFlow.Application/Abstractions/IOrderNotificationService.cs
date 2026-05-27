@@ -9,7 +9,7 @@
         Task NotifyRestaurantOfNewOrderAsync(Guid restaurantId, Guid orderId, decimal totalAmount);
 
         // ۲. نوتیفیکیشن سفارش آماده شده به گروه پیک‌ها
-        Task NotifyCouriersOfAvailableOrderAsync(Guid orderId, string restaurantName, string deliveryAddress);
+        Task NotifyCouriersOfAvailableOrderAsync(Guid courierId, Guid orderId, string restaurantName, string deliveryAddress);
 
         // ۳. نوتیفیکیشن تغییرات وضعیت سفارش به مشتری (مثلاً پیک در راه است)
         Task NotifyCustomerOfOrderStatusAsync(Guid customerId, Guid orderId, string status, string message);

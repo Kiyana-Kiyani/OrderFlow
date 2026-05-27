@@ -10,18 +10,24 @@
     <UserSecretsId>e86aa466-88ed-42a7-a33a-9396cd50e4cf</UserSecretsId>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.9&#xD;&#xA;					  " />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-	  <PackageReference Include="Serilog" Version="4.3.1" />
-	  <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-	  <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
-	  <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-	  <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="MassTransit.RabbitMQ" Version="8.5.9" />
+		<PackageReference Include="MassTransit.SignalR" Version="8.5.9" />
+
+		<PackageReference Include="StackExchange.Redis" Version="2.8.0" />
+
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+
+		<PackageReference Include="Serilog" Version="4.3.1" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+		<PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+		<PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
+	</ItemGroup>
+
+	
+
 
   <ItemGroup>
     <ProjectReference Include="..\OrderFlow.Contracts\OrderFlow.Contracts.csproj" />

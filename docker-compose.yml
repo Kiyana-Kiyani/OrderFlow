@@ -28,6 +28,8 @@ services:
       Jwt__RefreshTokenExpirationDays: ${JwtRefreshTokenExpirationDays}
       # Seq
       Seq__Url: http://seq:5341
+      # Redis
+      Redis__ConnectionString: redis:6379
 
     ports:
        - "5000:8080"
@@ -118,7 +120,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    restart: always
+    #restart: always
 
 
   orderflow.workers.payment:
@@ -141,15 +143,15 @@ services:
         condition: service_healthy
        seq:
         condition: service_healthy
+ #   restart: on-failure
 
 
 
-  courier-worker:
-    container_name: orderflow_courier_worker
+  orderflow.workers.courier:
     image: orderflow-courierworker:latest
     build:
       context: .
-      dockerfile: OrderFlow.Worker.Courier/Dockerfile
+      dockerfile: Src/OrderFlow.Worker.Courier/Dockerfile
     depends_on:
       rabbitmq:
         condition: service_healthy # Wait until diagnostics ping succeeds
@@ -169,9 +171,10 @@ services:
       Seq__Url: http://seq:5341
       #Redis
       Redis__ConnectionString: orderflow_redis:6379
-    restart: on-failure
+#    restart: on-failure
 
 volumes:
   sql_data:
   rabbitmq_data:
   seq_data:
+  redis_data:

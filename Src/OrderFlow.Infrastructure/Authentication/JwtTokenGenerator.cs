@@ -1,11 +1,11 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Infrastructure.Persistence;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace OrderFlow.Infrastructure.Authentication
 {
@@ -18,7 +18,7 @@ namespace OrderFlow.Infrastructure.Authentication
             _jwtOptions = jwtOptions.Value;
             _dbContext = dbContext;
         }
-        public string GenerateTokenAsync(Guid id, string email, IEnumerable<string> roles, Dictionary<string, string>? customClaims = null)
+        public string GenerateToken(Guid id, string email, IEnumerable<string> roles, Dictionary<string, string>? customClaims = null)
         {
             var claims = CreateClaimsAsync(id, email, roles, customClaims);
 

@@ -3,7 +3,7 @@ using MediatR;
 using OrderFlow.Application.Features.Orders.UpdatePaymentStatus;
 using OrderFlow.Contracts.IntegrationEvents;
 
-namespace OrderFlow.Api.Consumers
+namespace OrderFlow.Infrastructure.Consumers
 {
     public class PaymentSucceededConsumer : IConsumer<PaymentSucceededIntegrationEvent>
     {

@@ -1,16 +1,19 @@
 ﻿using MassTransit;
+using MassTransit.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OrderFlow.Contracts;
+using OrderFlow.Worker.Courier.Abstractions;
 using OrderFlow.Worker.Courier.Consumers;
+using OrderFlow.Worker.Courier.Hubs;
 using OrderFlow.Worker.Courier.Infrastructure;
 using Serilog;
+using StackExchange.Redis;
 
 namespace OrderFlow.Worker.Courier
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // Aligned with your modern .NET ApplicationBuilder setup
             var builder = Host.CreateApplicationBuilder(args);
@@ -28,25 +31,26 @@ namespace OrderFlow.Worker.Courier
                 .WriteTo.Console()
                 .WriteTo.Seq(seq["Url"]!));
 
-            // Shared Redis Whiteboard Infrastructure
-            builder.Services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = redis["ConnectionString"] ?? "localhost:6379";
-                options.InstanceName = "OrderFlow:";
-            });
 
-            builder.Services.AddScoped<ICourierConnectionTracker, CourierConnectionTracker>();
+            // ۱. ثبت اتصال نیتیو ردیس برای محاسبات جئو (Geo)
+            builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redis["ConnectionString"]!));
 
-            // Standalone SignalR scale-out layer
-            builder.Services.AddSignalR()
-                    .AddStackExchangeRedis(redis["ConnectionString"] ?? "localhost:6379");
 
+            builder.Services.AddTransient<IPushNotificationService, FirebasePushNotificationService>();
+
+
+            // ⚡ فیکس اصلی: ثبت هسته مرکزی سیگنال‌آر در پروژه ورکر ⚡
+            builder.Services.AddSignalR();
 
             // 6. Configure MassTransit utilizing standard Default Topologies
             builder.Services.AddMassTransit(x =>
             {
                 // Register your courier background consumer class type
-                x.AddConsumer<FoodReadyConsumer>();
+                x.AddConsumer<OrderReadyForPickupConsumer>();
+
+                // ⚡ ثبت پروکسی سیگنال‌آر: به ورکر اجازه می‌دهد پیام را به هابِ پروژه API هدایت کند
+                // ثبت پروکسی سیگنال‌آر مس‌ترنزیت روی هسته اصلی
+                x.AddSignalRHub<OrderHub>();
 
                 // Automatically format your queues to follow clean web standards (e.g., "orderflow-food-ready")
                 x.SetKebabCaseEndpointNameFormatter();
@@ -65,7 +69,8 @@ namespace OrderFlow.Worker.Courier
                     {
                         r.Interval(3, TimeSpan.FromSeconds(2));
                     });
-
+                    // ۷. استفاده از Outbox در حافظه برای اطمینان از تحویل ایمن پیام‌ها حتی در صورت بروز خطاهای موقتی
+                    cfg.UseInMemoryOutbox(context);
                     // THE MAGIC DEFAULT COMMAND:
                     // Automatically builds the 'orderflow-food-ready' queue as a durable Quorum line,
                     // discovers that it consumes 'FoodReadyIntegrationEvent', discovers the default 
@@ -73,6 +78,8 @@ namespace OrderFlow.Worker.Courier
                     cfg.ConfigureEndpoints(context);
                 });
             });
+            var host = builder.Build();
+            await host.RunAsync();
         }
     }
 }

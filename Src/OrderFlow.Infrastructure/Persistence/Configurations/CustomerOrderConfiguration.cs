@@ -11,7 +11,6 @@ namespace OrderFlow.Infrastructure.Persistence.Configurations
             builder.HasKey(c => c.Id);
 
             builder.Property(c => c.CustomerUserId).IsRequired();
-            builder.Property(o => o.CourierUserId).IsRequired(false);
             builder.Property(c => c.RestaurantId).IsRequired();
             builder.Property(c => c.RestaurantName).IsRequired().HasMaxLength(100);
 

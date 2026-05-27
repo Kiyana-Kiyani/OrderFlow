@@ -72,7 +72,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
                 try
                 {
                     await _dbContext.SaveChangesAsync(cancellationToken);
-                    await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
+                    await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
                 }
                 catch (Exception ex)
@@ -86,7 +86,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             {
                 // Fallback layer safety if interface isn't a backing DbContext instance
                 await _dbContext.SaveChangesAsync(cancellationToken);
-                await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
+                await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
             }
 
             _logger.LogInformation(

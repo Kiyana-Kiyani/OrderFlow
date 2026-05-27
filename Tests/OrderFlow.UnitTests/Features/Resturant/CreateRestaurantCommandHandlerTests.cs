@@ -31,6 +31,8 @@ namespace OrderFlow.UnitTests.Features.Restaurant
             var command = new CreateRestaurantCommand(
                 Name: "Test Restaurant",
                 Address: "123 Test Street",
+                Latitude: 40.7128,
+                Longitude: -74.0060,
                 Description: "A test restaurant for unit testing.",
                 OwnerId: ownerId
             );

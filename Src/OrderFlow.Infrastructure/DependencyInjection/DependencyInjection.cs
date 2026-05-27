@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using MassTransit.SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Configuration;
-using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Infrastructure.Authentication;
+using OrderFlow.Infrastructure.Consumers;
 using OrderFlow.Infrastructure.Identity;
 using OrderFlow.Infrastructure.Notifications;
 using OrderFlow.Infrastructure.Persistence;
@@ -20,9 +21,7 @@ namespace OrderFlow.Infrastructure.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration,
-            Action<IBusRegistrationConfigurator>? configureConsumers = null,
-            Action<IBusRegistrationContext, IRabbitMqBusFactoryConfigurator>? configureRabbitMqEndpoints = null)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
@@ -99,38 +98,47 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             services.Configure<RabbitMqOptions>(configuration.GetSection("RabbitMQ"));
 
             var rabbitMq = configuration.GetSection("RabbitMQ");
+
+
+
+
+
             services.AddMassTransit(x =>
-            {
-                //Tell MassTransit to use your existing DbContext for storing outbox rows
-                x.AddEntityFrameworkOutbox<ApplicationDbContext>(o =>
-                {
-                    // Tells MassTransit to use your specific DB provider rules
-                    o.UseSqlServer();
-                    // CRITICAL: Automatically intercepts your IPublishEndpoint.Publish() calls 
-                    // and diverts the messages into your local database outbox tables instead of RabbitMQ.
-                    o.UseBusOutbox();// Automates message dispatching from the outbox table to RabbitMQ
-                });
-                configureConsumers?.Invoke(x);
+                   {
+                       //Tell MassTransit to use your existing DbContext for storing outbox rows
+                       x.AddEntityFrameworkOutbox<ApplicationDbContext>(o =>
+                       {
+                           // Tells MassTransit to use your specific DB provider rules
+                           o.UseSqlServer();
+                           // CRITICAL: Automatically intercepts your IPublishEndpoint.Publish() calls 
+                           // and diverts the messages into your local database outbox tables instead of RabbitMQ.
+                           o.UseBusOutbox();// Automates message dispatching from the outbox table to RabbitMQ
+                       });
 
-                x.SetKebabCaseEndpointNameFormatter();
+                       x.AddConsumer<PaymentSucceededConsumer>();
+                       x.AddConsumer<PaymentFailedConsumer>();
+                       x.AddConsumer<OrderPickedUpConsumer>(); // 👈 اضافه شد
 
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
-                    {
-                        h.Username(rabbitMq["Username"]!);
-                        h.Password(rabbitMq["Password"]!);
-                    });
+                       x.AddSignalRHub<OrderHub>();
 
-                    cfg.Message<OrderPlacedIntegrationEvent>(x => x.SetEntityName("orderflow.events"));
-                    cfg.Publish<OrderPlacedIntegrationEvent>(x =>
-                    {
-                        x.ExchangeType = "topic";
-                        x.Durable = true;
-                    });
-                    configureRabbitMqEndpoints?.Invoke(context, cfg);
-                });
-            });
+                       x.SetKebabCaseEndpointNameFormatter();
+
+                       x.UsingRabbitMq((context, cfg) =>
+                       {
+                           cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
+                           {
+                               h.Username(rabbitMq["Username"]!);
+                               h.Password(rabbitMq["Password"]!);
+                           });
+                           cfg.UseMessageRetry(r =>
+                           {
+                               r.Interval(3, TimeSpan.FromSeconds(2));
+                           });
+
+                           cfg.ConfigureEndpoints(context);
+
+                       });
+                   });
 
             // ۱. ثبت سرویس SignalR
             // 1. Add SignalR and service dependency mapping to the container builder
@@ -139,30 +147,29 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             services.AddScoped<IOrderNotificationService, OrderNotificationService>();
 
 
-
-
-            // Extract your connection string from appsettings.json
+            //// Extract your connection string from appsettings.json
             var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"] ?? "localhost:6379";
             services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
-            // -----------------------------------------------------------------------------
-            // TYPE 1 REGISTERED HERE: The Shared Whiteboard (Distributed Cache)
-            // -----------------------------------------------------------------------------
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = redisConnectionString;
-                options.InstanceName = "OrderFlow:"; // Keeps your keys grouped together cleanly
-            });
 
-            // -----------------------------------------------------------------------------
-            // TYPE 2 REGISTERED HERE: The Radio Tower (SignalR Redis Pub/Sub Backplane)
-            // -----------------------------------------------------------------------------
-            services.AddSignalR()
-                            .AddStackExchangeRedis(redisConnectionString, options =>
-                            {
-                                // SignalR automatically uses Redis Pub/Sub channels here 
-                                // to link your web servers together like a radio network.
-                                options.Configuration.ChannelPrefix = "OrderFlow_SignalR";
-                            });
+            //// -----------------------------------------------------------------------------
+            //// TYPE 1 REGISTERED HERE: The Shared Whiteboard (Distributed Cache)
+            //// -----------------------------------------------------------------------------
+            //services.AddStackExchangeRedisCache(options =>
+            //{
+            //    options.Configuration = redisConnectionString;
+            //    options.InstanceName = "OrderFlow:"; // Keeps your keys grouped together cleanly
+            //});
+
+            //// -----------------------------------------------------------------------------
+            //// TYPE 2 REGISTERED HERE: The Radio Tower (SignalR Redis Pub/Sub Backplane)
+            //// -----------------------------------------------------------------------------
+            //services.AddSignalR()
+            //                .AddStackExchangeRedis(redisConnectionString, options =>
+            //                {
+            //                    // SignalR automatically uses Redis Pub/Sub channels here 
+            //                    // to link your web servers together like a radio network.
+            //                    options.Configuration.ChannelPrefix = "OrderFlow_SignalR";
+            //                });
 
 
             //services.AddSingleton<IConnection>(sp =>

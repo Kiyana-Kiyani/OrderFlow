@@ -70,9 +70,9 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ChangeAddress(Guid restaurantId, [FromBody] string newAddress, CancellationToken cancellationToken)
+        public async Task<IActionResult> ChangeAddress([FromBody] ChangeRestaurantAddressCommand changeRestaurantAddress, CancellationToken cancellationToken)
         {
-            await _sender.Send(new ChangeRestaurantAddressCommand(restaurantId, newAddress), cancellationToken);
+            await _sender.Send(changeRestaurantAddress, cancellationToken);
             return NoContent();
         }
 

@@ -7,7 +7,9 @@ namespace OrderFlow.Worker.Courier.Hubs
     /// Hub inside your Web API project so the Redis Pub/Sub backplane can route 
     /// messages to the correct websocket channels across application boundaries.
     /// </summary>
-    public class OrderNotificationHub : Hub
+    ///  این یک کلاس خالی (Stub) است تا MassTransit بتواند ساختار گروه بندی هاب API را پروکسی کند
+
+    public class OrderHub : Hub
     {
     }
 }

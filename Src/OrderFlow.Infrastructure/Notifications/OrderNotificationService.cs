@@ -21,10 +21,10 @@ namespace OrderFlow.Infrastructure.Notifications
         }
 
         // ارسال به همه پیک‌ها
-        public async Task NotifyCouriersOfAvailableOrderAsync(Guid orderId, string restaurantName, string deliveryAddress)
+        public async Task NotifyCouriersOfAvailableOrderAsync(Guid courierId, Guid orderId, string restaurantName, string deliveryAddress)
         {
             await _hubContext.Clients
-                .Group("Couriers")
+                .Group($"Courier_{courierId}")
                 .SendAsync("ReceiveAvailableOrder", new { OrderId = orderId, RestaurantName = restaurantName, DeliveryAddress = deliveryAddress });
         }
 

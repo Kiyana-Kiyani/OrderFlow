@@ -2,7 +2,7 @@
 {
     public record OrderReadyForPickupIntegrationEvent
         (Guid OrderId, Guid RestaurantId, string RestaurantName, DateTime ReadyAt,
-        string ResturantAddress, double ResturantLatitude, double ResturantLongitude
+        string RestaurantAddress, double RestaurantLatitude, double RestaurantLongitude
         , string CustomerAddress, double CustomerLatitude, double CustomerLongitude
         , Guid EventId, DateTime OccurredOnUtc)
         : IIntegrationEvent

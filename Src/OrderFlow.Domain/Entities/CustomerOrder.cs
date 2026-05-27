@@ -26,9 +26,9 @@ namespace OrderFlow.Domain.Entities
 
         public Guid Id { get; private set; }
         public Guid CustomerUserId { get; private set; }
-        public Guid? CourierUserId { get; private set; }
+        public Guid CourierUserId { get; private set; } = Guid.Empty;
         public Guid RestaurantId { get; private set; }
-        public string RestaurantName { get; private set; }
+        public string RestaurantName { get; private set; } = default!;
         public OrderStatus Status { get; private set; }
         public PaymentStatus Payment { get; private set; }
         public DateTime CreatedAt { get; private set; }
@@ -146,7 +146,7 @@ namespace OrderFlow.Domain.Entities
             if (Status != OrderStatus.ReadyForPickup)
                 throw new OrderStateException("An order must be ready for pickup before a courier can claim it.");
 
-            if (CourierUserId.HasValue)
+            if (CourierUserId != Guid.Empty)
                 throw new OrderStateException("This order has already been claimed by another courier.");
 
             CourierUserId = courierId;
