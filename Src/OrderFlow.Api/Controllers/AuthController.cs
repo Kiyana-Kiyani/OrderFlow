@@ -1,7 +1,9 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderFlow.Api.Contracts.Auth;
 using OrderFlow.Application.Features.Auth.Login;
+using OrderFlow.Application.Features.Auth.Logout;
 using OrderFlow.Application.Features.Auth.RefreshToken;
 using OrderFlow.Application.Features.Auth.Register;
 using System.Net;
@@ -31,7 +33,7 @@ namespace OrderFlow.Api.Controllers
                     detail: result.Error,
                     instance: HttpContext.Request.Path
                     );
-            return Ok(new RegisterUserResponse(result.UserId!.Value, result.Token!));
+            return Ok(new RegisterUserResponse(result.UserId!.Value, result.Token!, result.RefreshToken!));
         }
 
         [HttpPost("login")]
@@ -51,6 +53,21 @@ namespace OrderFlow.Api.Controllers
 
 
             return Ok(new LoginUserResponse(result.UserId!.Value, result.Token!, result.RefreshToken!));
+        }
+
+        [HttpPost("logout")]
+        [Authorize] // 🛑 فقط کاربران لاگین شده حق لاگ‌اوت دارند
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+        {
+            var result = await _sender.Send(new LogoutUserCommand(), cancellationToken);
+
+            if (!result.Succeeded)
+                return BadRequest(new { Error = result.Error });
+
+            // خروج موفقیت‌آمیز معمولاً کد 204 (بدون محتوا) برمی‌گرداند
+            return NoContent();
         }
 
         [HttpPost("refresh")]

@@ -66,28 +66,11 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             // Interfaces are great for keeping your code decoupled,
             // but they only let you see what you explicitly declared inside them.
 
-            if (_dbContext is DbContext efDbContext)
-            {
-                using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
-                try
-                {
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                    await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
-                    await transaction.CommitAsync(cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Transaction failed for Order {OrderId}. Rolling back changes.", order.Id);
-                    await transaction.RollbackAsync(cancellationToken);
-                    throw;
-                }
-            }
-            else
-            {
-                // Fallback layer safety if interface isn't a backing DbContext instance
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
-            }
+
+            await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
 
             _logger.LogInformation(
                 "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",

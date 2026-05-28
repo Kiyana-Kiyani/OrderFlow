@@ -19,8 +19,8 @@ namespace OrderFlow.Infrastructure.Consumers
 
             // صدا زدن متد زنده سیگنال‌آر برای آپدیت مانیتور مشتری
             await _notificationService.NotifyCustomerOfOrderStatusAsync(
-                message.CustomerId,
-                message.OrderId,
+                customerId: message.CustomerId,
+                orderId: message.OrderId,
                 status: "InTransit",
                 message: "Courier is on the way.");
         }

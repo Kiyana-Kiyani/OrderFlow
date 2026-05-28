@@ -28,5 +28,10 @@
                 Error = error
             };
         }
+
+        public static AuthResult SuccessfullLogout() => new AuthResult
+        {
+            Succeeded = true,
+        };
     }
 }

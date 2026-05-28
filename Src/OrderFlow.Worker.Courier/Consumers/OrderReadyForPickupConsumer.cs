@@ -1,9 +1,9 @@
 ﻿using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Hubs;
 using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Worker.Courier.Abstractions;
-using OrderFlow.Worker.Courier.Hubs;
 using StackExchange.Redis;
 
 namespace OrderFlow.Worker.Courier.Consumers
@@ -28,18 +28,18 @@ namespace OrderFlow.Worker.Courier.Consumers
         }
         public async Task Consume(ConsumeContext<OrderReadyForPickupIntegrationEvent> context)
         {
-            var @event = context.Message;
-            _logger.LogInformation("Worker received OrderReady event for Order ID: {OrderId}", @event.OrderId);
+            var message = context.Message;
+            _logger.LogInformation("Worker received OrderReady event for Order ID: {OrderId}", message.OrderId);
 
             string geoKey = "couriers:locations";
-            double restaurantLng = @event.RestaurantLongitude;
-            double restaurantLat = @event.RestaurantLatitude;
+            double restaurantLng = message.RestaurantLongitude;
+            double restaurantLat = message.RestaurantLatitude;
 
             // ۱. استفاده از قابلیت شگفت‌انگیز Redis Geo برای فیلتر پیک‌ها تا شعاع ۵ کیلومتری رستوران
             var nearbyCouriers = await _redisDb.GeoSearchAsync(geoKey, restaurantLng, restaurantLat, new GeoSearchCircle(3, GeoUnit.Kilometers));
             if (nearbyCouriers.Length == 0)
             {
-                _logger.LogWarning("No couriers found within 3km radius for Order {OrderId}.", @event.OrderId);
+                _logger.LogWarning("No couriers found within 3km radius for Order {OrderId}.", message.OrderId);
                 nearbyCouriers = await _redisDb.GeoSearchAsync(geoKey, restaurantLng, restaurantLat, new GeoSearchCircle(6, GeoUnit.Kilometers));
 
             }
@@ -47,10 +47,10 @@ namespace OrderFlow.Worker.Courier.Consumers
 
             var notificationPayload = new
             {
-                OrderId = @event.OrderId,
-                RestaurantName = @event.RestaurantName,
-                RestaurantAddress = @event.RestaurantAddress,
-                DeliveryAddress = @event.CustomerAddress
+                OrderId = message.OrderId,
+                RestaurantName = message.RestaurantName,
+                RestaurantAddress = message.RestaurantAddress,
+                DeliveryAddress = message.CustomerAddress
             };
 
 
@@ -67,7 +67,13 @@ namespace OrderFlow.Worker.Courier.Consumers
                 {
                     // 🚀 حالت اول: پیک آنلاین است (اپ باز است) -> شلیک مستقیم روی وب‌سوکت از طریق پروکسی
                     _logger.LogInformation("Courier {CourierId} is Online. Dispatching via SignalR Proxy...", courierId);
-
+                    //await _hubContext.Clients.All.SendAsync("ReceiveOrderNotification", new
+                    //{
+                    //    OrderId = message.OrderId,
+                    //    RestaurantName = message.RestaurantName,
+                    //    Status = "ReadyForPickup",
+                    //    Message = "ready for pickup"
+                    //});
                     // پیام از ربیت‌ام‌کی عبور کرده و روی گوشی پیک پاپ‌آپ می‌شود
                     await _hubContext.Clients.Group($"Courier_{courierId}")
                         .SendAsync("ReceiveAvailableOrder", notificationPayload);

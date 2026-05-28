@@ -39,36 +39,18 @@ public class PickupOrderCommandHandler : IRequestHandler<PickupOrderCommand, Pic
         // Domain rule: Confirms the picking courier is the assigned driver, then mutates state to OutForDelivery
         order.TransitionToOutForDelivery(_currentUser.UserId);
         var integrationEvent = new OrderPickedUpIntegrationEvent(
-            order.Id,
-            order.CustomerUserId,
-            order.CourierUserId,
-            DateTime.UtcNow);
+            OrderId: order.Id,
+            CustomerId: order.CustomerUserId,
+            CourierId: order.CourierUserId,
+            AcceptedAt: DateTime.UtcNow);
 
-        if (_dbContext is DbContext efDbContext)
-        {
-            // ۳. شروع ترنزکشن همزمان برای دیتابیس و جدول اوت‌باکس
-            using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                await _dbContext.SaveChangesAsync(cancellationToken);
-                // ۴. پابلیش روی پترن ترنزکشنال Outbox
-                await _publishEndpoint.Publish(integrationEvent, cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
 
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while picking up order {OrderId} by Courier {CourierId}. Transaction rolled back.", order.Id, _currentUser.UserId);
-                await transaction.RollbackAsync(cancellationToken);
-                throw; // Rethrow the exception after rollback to ensure the caller is aware of the failure
-            }
-        }
-        else
-        {
-            // Fallback layer safety if interface isn't a backing DbContext instance
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            await _publishEndpoint.Publish(integrationEvent, cancellationToken);
-        }
+        // 👈 اول: پابلیش روی پترن ترنزکشنال Outbox (اضافه شدن به Change Tracker دیتابیس)
+        await _publishEndpoint.Publish(integrationEvent, cancellationToken);
+
+        // 👈 دوم: ذخیره همزمان دیتای اصلی بیزینس و ردیف اوت‌باکس در دیتابیس
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
 
         _logger.LogInformation("Order {OrderId} picked up by Courier {CourierId}. Status updated to OutForDelivery.", order.Id, _currentUser.UserId);
 

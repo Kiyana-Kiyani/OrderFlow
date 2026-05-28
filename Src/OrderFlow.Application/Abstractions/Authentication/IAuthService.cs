@@ -7,5 +7,6 @@ namespace OrderFlow.Application.Abstractions.Authentication
         Task<AuthResult> RegisterAsync(string email, string password, CancellationToken cancellationToken);
         Task<AuthResult> LoginAsync(string email, string password, CancellationToken cancellationToken);
         Task<AuthResult> RefreshTokenAsync(string expiredToken, string refreshToken, CancellationToken cancellationToken);
+        Task<AuthResult> LogoutAsync(Guid userId, CancellationToken cancellationToken);
     }
 }

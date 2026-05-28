@@ -1,7 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -9,6 +6,9 @@ using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Common.Models;
 using OrderFlow.Infrastructure.Authentication;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace OrderFlow.Infrastructure.Identity
 {
@@ -36,6 +36,7 @@ namespace OrderFlow.Infrastructure.Identity
             var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser is not null)
                 return AuthResult.Failure("A user with this email already exists.");
+
             var user = new AppIdentityUser
             {
                 Id = Guid.NewGuid(),
@@ -68,6 +69,30 @@ namespace OrderFlow.Infrastructure.Identity
             return await GenerateAuthResultForUserAsync(user);
 
         }
+
+        public async Task<AuthResult> LogoutAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null)
+                return AuthResult.Failure("User not found.");
+
+            // 🛑 باطل کردن رفرش توکن کاربر در دیتابیس
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = DateTime.MinValue; // یا DateTime.MinValue
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = string.Join("; ", updateResult.Errors.Select(e => e.Description));
+                return AuthResult.Failure($"Failed to process logout: {errors}");
+            }
+
+            // (اختیاری) اگر از SignInManager برای کوکی‌ها هم استفاده می‌کنی
+            // await _signInManager.SignOutAsync(); 
+
+            return AuthResult.SuccessfullLogout();
+        }
+
 
         private async Task<AuthResult> GenerateAuthResultForUserAsync(AppIdentityUser user)
         {

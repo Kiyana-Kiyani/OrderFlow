@@ -2,9 +2,9 @@
 using MassTransit.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OrderFlow.Contracts.Hubs;
 using OrderFlow.Worker.Courier.Abstractions;
 using OrderFlow.Worker.Courier.Consumers;
-using OrderFlow.Worker.Courier.Hubs;
 using OrderFlow.Worker.Courier.Infrastructure;
 using Serilog;
 using StackExchange.Redis;

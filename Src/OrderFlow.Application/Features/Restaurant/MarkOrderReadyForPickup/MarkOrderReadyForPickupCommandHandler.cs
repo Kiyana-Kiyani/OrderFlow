@@ -76,8 +76,6 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
                 await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
-
-
         }
         else
         {

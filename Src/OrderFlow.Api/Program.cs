@@ -5,8 +5,8 @@ using Microsoft.OpenApi.Models;
 using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
 using OrderFlow.Application;
+using OrderFlow.Contracts.Hubs;
 using OrderFlow.Infrastructure.DependencyInjection;
-using OrderFlow.Infrastructure.Notifications;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
 using Serilog;
@@ -78,7 +78,16 @@ namespace OrderFlow.Api
                         failureStatus: HealthStatus.Unhealthy,
                         name: "sqlserver",
                         tags: new[] { "ready" });
-
+                builder.Services.AddCors(options =>
+                {
+                    options.AddPolicy("AllowSignalR", policy =>
+                    {
+                        policy.SetIsOriginAllowed(_ => true) // در محیط توسعه، همه دامنه‌ها را مجاز می‌کند
+                              .AllowAnyHeader()
+                              .AllowAnyMethod()
+                              .AllowCredentials(); // 👈 این خط برای ارسال توکن در سیگنال‌آر ۱۰۰٪ حیاتی است
+                    });
+                });
                 var app = builder.Build();
 
                 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -114,6 +123,7 @@ namespace OrderFlow.Api
                     await IdentityDataSeeder.AdminSeederAsync(app.Services);
                 }
 
+                app.UseCors("AllowSignalR");
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
                 app.UseAuthorization();
