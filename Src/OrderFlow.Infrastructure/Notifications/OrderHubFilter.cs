@@ -40,10 +40,11 @@ namespace OrderFlow.Infrastructure.Notifications
 
                     if (role == "Courier" && !string.IsNullOrEmpty(userId))
                     {
+                        var userIDLower = userId.ToLowerInvariant();
                         await context.Hub.Groups.AddToGroupAsync(context.Context.ConnectionId, "Couriers");
-                        await context.Hub.Groups.AddToGroupAsync(context.Context.ConnectionId, $"Courier_{userId}");
+                        await context.Hub.Groups.AddToGroupAsync(context.Context.ConnectionId, $"Courier_{userIDLower}");
 
-                        string presenceKey = $"presence:courier:{userId}";
+                        string presenceKey = $"presence:courier:{userIDLower}";
                         await _redisDb.StringSetAsync(presenceKey, "Online", TimeSpan.FromMinutes(30));
                     }
                     else if (role == "Owner" && !string.IsNullOrEmpty(restaurantId))
@@ -80,7 +81,7 @@ namespace OrderFlow.Infrastructure.Notifications
 
                 if (role == "Courier" && !string.IsNullOrEmpty(userId))
                 {
-                    string presenceKey = $"presence:courier:{userId}";
+                    string presenceKey = $"presence:courier:{userId.ToLowerInvariant()}";
                     // حذف وضعیت آنلاین از ردیس
                     await _redisDb.KeyDeleteAsync(presenceKey);
                     _logger.LogInformation("Courier {UserId} disconnected. Presence removed from Redis.", userId);

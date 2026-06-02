@@ -1,16 +1,13 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Api;
 using OrderFlow.Infrastructure.Persistence;
-using OrderFlow.IntegrationTests.Auth;
 using Respawn;
 using System.Data.Common;
 
-namespace OrderFlow.IntegrationTests
+namespace OrderFlow.IntegrationTests.Fixtures
 {
     public class BaseIntegrationTest : IClassFixture<IntegrationTestWebFactory>, IAsyncLifetime
     {

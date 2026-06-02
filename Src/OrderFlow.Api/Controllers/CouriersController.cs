@@ -6,6 +6,7 @@ using OrderFlow.Application.Features.Couriers.CompleteDelivery;
 using OrderFlow.Application.Features.Couriers.GetAvailableJobs;
 using OrderFlow.Application.Features.Couriers.PickupOrder;
 using OrderFlow.Application.Features.Couriers.UpdateLocation;
+using OrderFlow.Application.Features.Couriers.UpdateProfile;
 
 namespace OrderFlow.Api.Controllers;
 
@@ -65,6 +66,25 @@ public class CouriersController : ControllerBase
     public async Task<IActionResult> CompleteDelivery([FromRoute] Guid orderId, CancellationToken cancellationToken)
     {
         await _sender.Send(new CompleteDeliveryCommand(orderId), cancellationToken);
+        return NoContent();
+    }
+    [HttpPut("profile")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateCourierProfileCommand command, CancellationToken cancellationToken)
+    {
+        // درخواست به همراه اطلاعات وسیله و نام به لایه Application فرستاده می‌شود
+        await _sender.Send(command, cancellationToken);
+        return NoContent();
+    }
+    [HttpPost("toggle-availability")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleAvailability(CancellationToken cancellationToken)
+    {
+        // ارسال کامند بدون نیاز به پارامتر ورودی، چون آیدی از توکن استخراج می‌شود
+        await _sender.Send(new ToggleCourierAvailabilityCommand(), cancellationToken);
         return NoContent();
     }
 }

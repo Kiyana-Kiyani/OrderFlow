@@ -29,7 +29,7 @@ namespace OrderFlow.Infrastructure.Authentication
         }
 
         public IReadOnlyList<string> Roles =>
-            User.FindAll(ClaimTypes.Email)
+            User.FindAll(ClaimTypes.Role)
             .Select(x => x.Value).
             ToList().AsReadOnly();
 

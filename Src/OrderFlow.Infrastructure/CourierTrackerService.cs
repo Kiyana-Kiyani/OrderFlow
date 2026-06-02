@@ -22,6 +22,17 @@ namespace OrderFlow.Infrastructure
             await _redisDb.GeoAddAsync(geoKey, longitude, latitude, courierIdStr);
             await _redisDb.StringSetAsync(presenceKey, "Online", TimeSpan.FromMinutes(2));
         }
+        public async Task RemoveFromLiveTrackingAsync(Guid courierId)
+        {
+            string courierIdStr = courierId.ToString();
+            string geoKey = "couriers:locations";
+            string presenceKey = $"presence:courier:{courierIdStr}";
+
+            // حذف مشخصات جغرافیایی از روی نقشه ریدیس
+            await _redisDb.GeoRemoveAsync(geoKey, courierIdStr);
+            // حذف کلید وضعیت آنلاین بودن پیک
+            await _redisDb.KeyDeleteAsync(presenceKey);
+        }
 
     }
 }

@@ -4,10 +4,11 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
-namespace OrderFlow.IntegrationTests.Auth
+namespace OrderFlow.IntegrationTests.Features.Auth
 {
     public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
+        public const string UserIdHeader = "X-Test-UserId";
         public TestAuthHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
@@ -17,25 +18,33 @@ namespace OrderFlow.IntegrationTests.Auth
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            // 1. Check if the Authorization header is completely missing
+            // ۱. بررسی وجود هدر اصلی احراز هویت تست
             if (!Request.Headers.ContainsKey("Authorization"))
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
 
-            // 2. (Optional but good) Ensure it's our specific TestAuth token
             var authHeader = Request.Headers["Authorization"].ToString();
             if (!authHeader.StartsWith("TestAuth"))
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
 
-            // 3. If the header exists, THEN create the fake Admin user
+            // ۲. تنظیم مقدار پیش‌فرض برای آیدی کاربر
+            var userId = "00000000-0000-0000-0000-000000000001";
+
+            // ۳. قاپیدن آیدی داینامیک فرستاده شده از سمت کلاینتِ تست
+            if (Context.Request.Headers.TryGetValue(UserIdHeader, out var customUserId))
+            {
+                userId = customUserId.ToString();
+            }
+
+            // ۴. 🔥 فیکس اصلی اینجاست: پاس دادن متغیر userId به جای متد راندوم ساز دات‌نت
             var claims = new Claim[]
             {
-                new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Name, "TestAdminUser"),
-                new Claim(ClaimTypes.Role, "Admin")
+            new Claim(ClaimTypes.NameIdentifier, userId), // 👈 آیدی داینامیک اینجا نشست
+            new Claim(ClaimTypes.Name, "TestCourierUser"),
+            new Claim(ClaimTypes.Role, "Courier")
             };
 
             var identity = new ClaimsIdentity(claims, "TestAuth");

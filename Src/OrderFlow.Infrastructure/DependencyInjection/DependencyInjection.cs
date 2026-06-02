@@ -1,5 +1,4 @@
 ﻿using MassTransit;
-using MassTransit.SignalR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
@@ -104,13 +103,26 @@ namespace OrderFlow.Infrastructure.DependencyInjection
 
             var rabbitMq = configuration.GetSection("RabbitMQ");
 
+            //// Extract your connection string from appsettings.json
+            var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"] ?? "localhost:6379";
+            //  services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var configuration = ConfigurationOptions.Parse(redisConnectionString);
+                configuration.AbortOnConnectFail = false; // اگر بار اول وصل نشد، کرش نکن و در پس‌زمینه تلاش کن
+                return ConnectionMultiplexer.Connect(configuration);
+            });
+
             // ۱. ثبت سرویس SignalR
             // 1. Add SignalR and service dependency mapping to the container builder
             services.AddSignalR(options =>
             {
                 // ثبت فیلتر برای مدیریت اتصالات هاب به صورت متمرکز
                 options.AddFilter<OrderHubFilter>();
-            });
+            }).AddStackExchangeRedis(redisConnectionString, options =>
+                {
+                    options.Configuration.ChannelPrefix = RedisChannel.Literal("OrderFlow_WebSockets");
+                });
 
 
             services.AddMassTransit(x =>
@@ -122,14 +134,12 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                            o.UseSqlServer();
                            // CRITICAL: Automatically intercepts your IPublishEndpoint.Publish() calls 
                            // and diverts the messages into your local database outbox tables instead of RabbitMQ.
-                           // o.UseBusOutbox();// Automates message dispatching from the outbox table to RabbitMQ
+                           o.UseBusOutbox();// Automates message dispatching from the outbox table to RabbitMQ
                        });
 
                        x.AddConsumer<PaymentSucceededConsumer>();
                        x.AddConsumer<PaymentFailedConsumer>();
                        x.AddConsumer<OrderPickedUpConsumer>(); // 👈 اضافه شد
-
-                       x.AddSignalRHub<OrderFlow.Contracts.Hubs.OrderHub>();
 
                        x.SetKebabCaseEndpointNameFormatter();
 
@@ -155,9 +165,6 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             services.AddSingleton<IOrderNotificationService, OrderNotificationService>();
 
 
-            //// Extract your connection string from appsettings.json
-            var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"] ?? "localhost:6379";
-            services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
 
             return services;

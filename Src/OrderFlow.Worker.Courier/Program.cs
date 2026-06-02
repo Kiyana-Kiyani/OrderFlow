@@ -1,8 +1,6 @@
 ﻿using MassTransit;
-using MassTransit.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OrderFlow.Contracts.Hubs;
 using OrderFlow.Worker.Courier.Abstractions;
 using OrderFlow.Worker.Courier.Consumers;
 using OrderFlow.Worker.Courier.Infrastructure;
@@ -11,7 +9,7 @@ using StackExchange.Redis;
 
 namespace OrderFlow.Worker.Courier
 {
-    internal class Program
+    public class Program
     {
         static async Task Main(string[] args)
         {
@@ -33,24 +31,30 @@ namespace OrderFlow.Worker.Courier
 
 
             // ۱. ثبت اتصال نیتیو ردیس برای محاسبات جئو (Geo)
-            builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redis["ConnectionString"]!));
+            builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            {
+                var configuration = ConfigurationOptions.Parse(redis["ConnectionString"]!);
+                configuration.AbortOnConnectFail = false; // اگر بار اول وصل نشد، کرش نکن و در پس‌زمینه تلاش کن
+                return ConnectionMultiplexer.Connect(configuration);
+            });
 
 
             builder.Services.AddTransient<IPushNotificationService, FirebasePushNotificationService>();
 
 
-            // ⚡ فیکس اصلی: ثبت هسته مرکزی سیگنال‌آر در پروژه ورکر ⚡
-            builder.Services.AddSignalR();
+            // ⚡ فیکس نهایی: متصل کردن سیگنال‌آرِ ورکر به بک‌پلیین مشترک ردیس (بدون پروکسی مس‌ترنزیت)
+            builder.Services.AddSignalR()
+                .AddStackExchangeRedis(redis["ConnectionString"]!, options =>
+                {
+                    // این همان کانالی است که API هم به آن گوش می‌دهد
+                    options.Configuration.ChannelPrefix = RedisChannel.Literal("OrderFlow_WebSockets");
+                });
 
             // 6. Configure MassTransit utilizing standard Default Topologies
             builder.Services.AddMassTransit(x =>
             {
                 // Register your courier background consumer class type
                 x.AddConsumer<OrderReadyForPickupConsumer>();
-
-                // ⚡ ثبت پروکسی سیگنال‌آر: به ورکر اجازه می‌دهد پیام را به هابِ پروژه API هدایت کند
-                // ثبت پروکسی سیگنال‌آر مس‌ترنزیت روی هسته اصلی
-                x.AddSignalRHub<OrderHub>();
 
                 // Automatically format your queues to follow clean web standards (e.g., "orderflow-food-ready")
                 x.SetKebabCaseEndpointNameFormatter();
