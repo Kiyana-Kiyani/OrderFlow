@@ -34,6 +34,8 @@ namespace OrderFlow.Infrastructure.Persistence.Configurations
                 .WithOne()
                 .HasForeignKey(oi => oi.CustomerOrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.Property(c => c.RowVersion)
+               .IsRowVersion();
         }
     }
 }

@@ -28,8 +28,6 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("ddddddd");
-
             var restaurant = _dbContext.Restaurants.AsNoTracking()
                 .FirstOrDefault(r => r.Id == request.RestaurantId && r.IsActive);
 

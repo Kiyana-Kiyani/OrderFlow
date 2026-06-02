@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Net;
+using FluentAssertions;
 using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Contracts.IntegrationEvents;
@@ -6,7 +7,6 @@ using OrderFlow.Domain.Entities;
 using OrderFlow.Domain.Enums;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.IntegrationTests.Fixtures;
-using System.Net;
 
 namespace OrderFlow.IntegrationTests.Features.Couriers;
 
@@ -247,12 +247,105 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
                 "The assigned courier must remain the owner of the finalized delivery.");
         }
     }
+
+    [Fact]
+    public async Task AcceptJob_ShouldHandleConcurrency_WhenTwoCouriersTryToAcceptSimultaneously()
+    {
+        // Arrange - ۱. ساخت دو پیک مجزا و فعال کردن شیفت آن‌ها
+        var courierAId = Guid.NewGuid();
+        var courierBId = Guid.NewGuid();
+
+        var courierA = new Courier(courierAId, "Courier Ali", VehicleType.Motorcycle);
+        courierA.ToggleAvailability();
+
+        var courierB = new Courier(courierBId, "Courier Reza", VehicleType.Bicycle);
+        courierB.ToggleAvailability();
+
+        // ۲. ساخت یک سفارش واحد در وضعیت آماده برای پیکاپ
+        var testOrder = new CustomerOrder(
+            customerUserId: Guid.NewGuid(),
+            restaurantId: Guid.NewGuid(),
+            restaurantName: "Chipotle",
+            customerAddress: "Berlin Alexanderplatz",
+            customerLatitude: 52.5200,
+            customerLongitude: 13.4050
+        );
+
+        testOrder.AddOrderItem(quantity: 1, unitPrice: 50m, menuItemId: Guid.NewGuid(), menuItemName: "Burrito");
+        testOrder.MarkPaymentAsSucceeded();
+        testOrder.StartPreparing();
+        testOrder.TransitionToReadyForPickup(); // سفارش آماده‌ی اکسپت کردن توسط پیک‌هاست
+
+        var orderId = testOrder.Id;
+
+        using (var setupScope = Factory.Services.CreateScope())
+        {
+            var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            dbContext.Couriers.AddRange(courierA, courierB);
+            dbContext.CustomerOrders.Add(testOrder);
+            await dbContext.SaveChangesAsync();
+        }
+
+        // ۳. آماده‌سازی دو کلاینت HTTP مجزا برای شبیه‌سازی دو گوشی موبایل مختلف
+        var clientA = Factory.CreateClient();
+        clientA.DefaultRequestHeaders.Add("X-Test-UserId", courierAId.ToString());
+
+        var clientB = Factory.CreateClient();
+        clientB.DefaultRequestHeaders.Add("X-Test-UserId", courierBId.ToString());
+
+        // Act - ۴. شلیک همزمان (Parallel) دو درخواست به سمت یک سفارش واحد
+        var taskA = clientA.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null);
+        var taskB = clientB.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null);
+
+        // منتظر می‌مانیم تا هر دو درخواست در یک لحظه پردازش شوند
+        var responses = await Task.WhenAll(taskA, taskB);
+        var responseA = responses[0];
+        var responseB = responses[1];
+
+        // Assert - ۵. راستی‌آزمایی هندل شدن مسابقه (Race Condition)
+
+        // یکی از پیک‌ها حتماً باید موفق شده باشد (کد 204)
+        var successCount = responses.Count(r => r.StatusCode == HttpStatusCode.NoContent);
+        successCount.Should().Be(1, "Exactly one courier must successfully claim the order.");
+
+        // پیک دیگر باید با خطا مواجه شده باشد (یا خطای دامین 400 یا خطای همزمانی دیتابیس)
+        var failureCount = responses.Count(r => r.StatusCode == HttpStatusCode.BadRequest || r.StatusCode == HttpStatusCode.Conflict);
+        failureCount.Should().Be(1, "The losing courier request must be rejected with an error status.");
+
+        // ۶. بررسی نهایی دیتابیس؛ مطمئن می‌شویم دیتای سفارش خراب نشده و فقط یکی از پیک‌ها مالک آن است
+        using (var assertScope = Factory.Services.CreateScope())
+        {
+            var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var finalizedOrder = await dbContext.CustomerOrders.FindAsync(orderId);
+
+            finalizedOrder.Should().NotBeNull();
+            finalizedOrder!.CourierUserId.Should().BeOneOf(courierAId, courierBId);
+            finalizedOrder.CourierUserId.Should().NotBe(Guid.Empty, "The order must belong to one of the active racing couriers.");
+        }
+    }
 }
 
 
 
 
+/*۳ پیشنهاد برای فاز نهایی (The Senior Polish)
+۱. تست لایه ولیدیشن (FluentValidation)
+تو در کلاس DependencyInjection لایه Application رفتار ValidationBehavior را ثبت کردی. خیلی قشنگ است اگر یک تست Sad Path برای ثبت سفارش بنویسی که در آن تعداد آیتم‌ها منفی باشد یا آدرس خالی فرستاده شود.
 
+هدف: مطمئن شویم FluentValidation ریکوئست نامعتبر را قبل از رسیدن به دیتابیس خفه می‌کند و API به درستی خطای ۴۰۰ با جزئیات آرایه خطاها (Validation Errors) پس می‌دهد.
+
+۲. تست همزمانی و دوبار کلیک (Concurrency / Idempotency)
+یکی از چالش‌های بزرگ سیستم‌های دلیوری این است که پیک همزمان روی دکمه "Accept" یا "Pickup" دو بار کلیک کند یا دو پیک همزمان یک سفارش را هوا کنند!
+
+هدف: اگر در EF Core از [ConcurrencyCheck] یا RowVersion استفاده می‌کنی، می‌توانیم تستی بنویسی که دو تا درخواست همزمان (Concurrent) به یک سفارش شلیک کند و مطمئن شویم درخواست دوم با خطای مدیریت‌شده روبرو می‌شود و دیتا کورپت (Corrupt) نمی‌شود.
+
+۳. موک کردن سرویس‌های خارجی (External API Mocking)
+اگر سیستم ثبت سفارش تو بعد از ایجاد، به یک سرویس خارجی مثل درگاه پرداخت یا سرویس پیامک (SMS Gateway) یک درخواست HTTP می‌زند، در محیط تست کانتینر چطور باید جلویش را بگیریم؟
+
+هدف: استفاده از ابزار قدرتمند WireMock.Net در فکتوری تست برای شبیه‌سازی (Mock) پاسخ‌های سرورهای واقعی خارج از سیستم.
+
+پایه‌ام که با هم یکی از این سه تا را جلو ببریم تا پازل این بخش کاملاً تکمیل شود. دوست داری پرونده این بخش را با تست ولیدیشن‌ها (FluentValidation) ببندیم یا بریم سراغ چالش جذاب تست همزمانی و Concurrency؟
+*/
 
 
 
