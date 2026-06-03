@@ -23,8 +23,10 @@ namespace OrderFlow.IntegrationTests.Fixtures
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            // 🚀 فیکس طلایی گیت‌هاب: تغییر لوگر استاتیک به یک لوگر معمولی 
+            // این کار باعث می‌شود سری‌لاگ در اجرای موازی تست‌ها تلاش نکند لوگر مشترک را دوباره Freeze کند
+            Serilog.Log.Logger = new Serilog.LoggerConfiguration().CreateLogger();
             builder.UseEnvironment("Testing");
-
 
             builder.ConfigureTestServices(services =>
             {
@@ -62,7 +64,7 @@ namespace OrderFlow.IntegrationTests.Fixtures
                     { "ConnectionStrings:Default", _dbContainer.GetConnectionString() },
                     { "Redis:ConnectionString", _redisContainer.GetConnectionString() }, // 👈 جلوگیری از کرش SignalR
                     // 🚀 فیکس طلایی: تزریق آیدی پویا با هر دو فرمت آدرس‌دهی دات‌نت برای تضمین پایداری کانکشن
-        { "Redis__ConnectionString", _redisContainer.GetConnectionString() }
+                    { "Redis__ConnectionString", _redisContainer.GetConnectionString() }
                 });
             });
 
