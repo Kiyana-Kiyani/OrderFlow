@@ -31,6 +31,8 @@ namespace OrderFlow.UnitTests.Features.Restaurant
         [Fact]
         public async Task Handle_ShouldCreateRestaurantSuccessfully_WhenDataIsValid()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
             var ownerId = Guid.NewGuid();
             var command = new CreateRestaurantCommand(
@@ -43,11 +45,11 @@ namespace OrderFlow.UnitTests.Features.Restaurant
             );
 
             // Act
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await _handler.Handle(command, ct);
 
             // واکشی داده ثبت شده از دیتابیس حافظه جهت راستی‌آزمایی
             var savedRestaurant = await _dbContext.Restaurants
-                .FirstOrDefaultAsync(x => x.Id == result.RestaurantId, CancellationToken.None);
+                .FirstOrDefaultAsync(x => x.Id == result.RestaurantId, ct);
 
             // Assert
             result.Should().NotBeNull();

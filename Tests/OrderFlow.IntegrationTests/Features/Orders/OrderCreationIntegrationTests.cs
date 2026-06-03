@@ -19,6 +19,8 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
     [Fact]
     public async Task CreateOrder_ShouldSaveOrderInDatabase_WithCreatedAndPendingStatus()
     {
+        var ct = TestContext.Current.CancellationToken;
+
         // Arrange - ۱. ساخت شناسه‌ها برای تراکنش
         var currentCustomerId = Guid.NewGuid();
         //    var restaurantId = Guid.NewGuid();
@@ -45,7 +47,7 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
         {
             var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Restaurants.Add(testRestaurant);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(ct);
         }
 
         // ساخت بدنه درخواست (این ساختار را با نام DTO واقعی خودت در پروژه عینا جایگزین کن)
@@ -68,7 +70,7 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
         Client.DefaultRequestHeaders.Add("X-Test-UserId", currentCustomerId.ToString());
 
         // Act - ۲. شلیک درخواست POST به اِندپوینت ثبت سفارش
-        var response = await Client.PostAsJsonAsync("/api/v1/orders", createOrderCommand);
+        var response = await Client.PostAsJsonAsync("/api/v1/orders", createOrderCommand, ct);
 
         // Assert - ۳. بررسی و راستی‌آزمایی صحت ثبت سفارش در سیستم
 
@@ -86,7 +88,7 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
             // پیدا کردن سفارش ثبت شده در دیتابیس کانتینر بر اساس آیدی مشتری
             var savedOrder = await dbContext.CustomerOrders
                 .Include(o => o.OrderItems)
-                .FirstOrDefaultAsync(o => o.CustomerUserId == currentCustomerId);
+                .FirstOrDefaultAsync(o => o.CustomerUserId == currentCustomerId, ct);
 
             // اعتبارسنجی وضعیت‌های پایه‌ای سفارش که در سازنده دامین کپسوله شده بودند
             savedOrder.Should().NotBeNull("The order must be successfully persisted in the SQL database.");

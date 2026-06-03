@@ -1,12 +1,13 @@
-﻿using System.Net;
-using FluentAssertions;
+﻿using FluentAssertions;
 using MassTransit.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Domain.Entities;
 using OrderFlow.Domain.Enums;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.IntegrationTests.Fixtures;
+using System.Net;
 
 namespace OrderFlow.IntegrationTests.Features.Couriers;
 
@@ -19,6 +20,8 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
     [Fact]
     public async Task PickupOrder_ShouldUpdateDatabaseStatus_AndPublishOutboxMessage()
     {
+        var ct = TestContext.Current.CancellationToken;
+
         // Arrange - ۱. آماده‌سازی دیتای اولیه مطابق با قوانین دامین (DDD)
         var currentCourierId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
@@ -52,7 +55,7 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
             var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Couriers.Add(testCourier); // 👈 ذخیره لایه دامین پیک
             dbContext.CustomerOrders.Add(testOrder);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(ct);
         }
 
         var harness = Factory.Services.GetRequiredService<ITestHarness>();
@@ -66,7 +69,7 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         Client.DefaultRequestHeaders.Add("X-Test-UserId", currentCourierId.ToString());
 
         // حالا با همان کلاینتی که توکن پیش‌فرض دارد پست میکنیم
-        var response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/pickup", null);
+        var response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/pickup", null, ct);
 
         // Assert - ۳. بررسی صحت عملکرد کل سیستم (HTTP, DB, Outbox)
 
@@ -77,8 +80,9 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         using (var assertScope = Factory.Services.CreateScope())
         {
             var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var updatedOrder = await dbContext.CustomerOrders.FindAsync(orderId);
-
+            // 🚀 فیکس وارنینگ xUnit و یکدست شدن با تست قبلی
+            var updatedOrder = await dbContext.CustomerOrders
+                .FirstOrDefaultAsync(x => x.Id == orderId, ct);
             updatedOrder.Should().NotBeNull();
             updatedOrder!.Status.Should().Be(OrderStatus.OutForDelivery,
                 "The domain logic should transition the order state to OutForDelivery after pickup.");
@@ -86,7 +90,7 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
 
         // ج) بررسی عملکرد پترن Outbox (آیا پیام در مموری‌بوروکر آماده ارسال شده است؟)
         var eventPublished = await harness.Published.Any<OrderPickedUpIntegrationEvent>(
-            e => e.Context.Message.OrderId == orderId);
+            e => e.Context.Message.OrderId == orderId, ct);
 
         eventPublished.Should().BeTrue("The Outbox pattern must intercept and publish the OrderPickedUpIntegrationEvent.");
     }
@@ -94,6 +98,8 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
     [Fact]
     public async Task PickupOrder_ShouldReturnBadRequest_WhenCourierIsNotTheAssignedOne()
     {
+        var ct = TestContext.Current.CancellationToken;
+
         // Arrange - ۱. ساخت دو پیک مجزا و یک سفارش تخصیص‌داده‌شده به پیک اول
         var assignedCourierId = Guid.NewGuid();
         var strangerCourierId = Guid.NewGuid(); // 👈 پیکی که قصد دارد سفارش را به زور بردارد
@@ -123,7 +129,6 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         testOrder.AssignCourier(assignedCourierId);
 
         var orderId = testOrder.Id;
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
         // ذخیره سفارش و پیک‌ها در دیتابیس کانتینر SQL Server
         using (var setupScope = Factory.Services.CreateScope())
@@ -131,7 +136,7 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
             var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Couriers.AddRange(assignedCourier, strangerCourier); // 👈 ذخیره هر دو پیک
             dbContext.CustomerOrders.Add(testOrder);
-            await dbContext.SaveChangesAsync(cts.Token);
+            await dbContext.SaveChangesAsync(ct);
         }
 
         var harness = Factory.Services.GetRequiredService<ITestHarness>();
@@ -140,28 +145,30 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         Client.DefaultRequestHeaders.Remove("X-Test-UserId");
         Client.DefaultRequestHeaders.Add("X-Test-UserId", strangerCourierId.ToString());
         HttpResponseMessage? response = null;
-        Exception? caughtException = null;
-        try
-        {
-            // شلیک رکوئست به سمت کنترلر
-            response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/pickup", null, cancellationToken: cts.Token);
-        }
-        catch (Exception ex)
-        {
-            // اگر سرور تست خطا را مستقیم بالا فرستاد، آن را ذخیره می‌کنیم تا تست متوقف نشود
-            caughtException = ex;
-        }
+        // Exception? caughtException = null;
+        //try
+        //{
+        // شلیک رکوئست به سمت کنترلر
+        response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/pickup", null, cancellationToken: ct);
+        //}
+        //catch (Exception ex)
+        //{
+        //    // اگر سرور تست خطا را مستقیم بالا فرستاد، آن را ذخیره می‌کنیم تا تست متوقف نشود
+        //    caughtException = ex;
+        //}
         // Assert - ۳. راستی‌آزمایی سه‌لایه‌ای امنیتی سیستم
-
-        // الف) تایید اینکه API خطا برگردانده است (بسته به مپینگ مدیا‌آرت یا میدلور شما، ۴۰۰ یا ۴۰۹)
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+        // الف) تایید اینکه API خطا برگردانده است
+        response!.StatusCode.Should().Be(HttpStatusCode.BadRequest,
             "The API must reject the request because the courier identities do not match.");
 
         // ب) تایید غایی اینکه دیتابیس کماکان دست‌نخورده باقی مانده و وضعیت تغییر نکرده است
         using (var assertScope = Factory.Services.CreateScope())
         {
             var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var currentOrderInDb = await dbContext.CustomerOrders.FindAsync(orderId, cts.Token);
+
+            // 🚀 تغییر اصلی ۱: سوئیچ به FirstOrDefaultAsync به جای FindAsync برای شکستن قفل دیتابیس
+            var currentOrderInDb = await dbContext.CustomerOrders
+                .FirstOrDefaultAsync(x => x.Id == orderId, ct);
 
             currentOrderInDb.Should().NotBeNull();
 
@@ -175,8 +182,13 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         }
 
         // ج) تایید اینکه الگوی Outbox هیچ پیامی روی شبکه منتشر نکرده است
+        // 🚀 فیکس قطعی: ساخت یک CancellationToken با تایم‌اوت بسیار کوتاه اختصاصی برای این ارزیابی منفی
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(50));
+
         var eventPublished = await harness.Published.Any<OrderPickedUpIntegrationEvent>(
-            e => e.Context.Message.OrderId == orderId, cts.Token);
+            e => e.Context.Message.OrderId == orderId,
+            cts.Token); // پاس دادن توکن محدود شده
 
         eventPublished.Should().BeFalse("The system must NOT publish an integration event for an illegal pickup operation.");
     }
@@ -184,6 +196,8 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
     [Fact]
     public async Task DeliverOrder_ShouldUpdateDatabaseStatus()
     {
+        var ct = TestContext.Current.CancellationToken;
+
         // Arrange - ۱. آماده‌سازی سفارش و رساندن آن به وضعیت OutForDelivery طبق قوانین دامین
         var currentCourierId = Guid.NewGuid();
 
@@ -211,7 +225,6 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         testOrder.TransitionToOutForDelivery(currentCourierId); // سفارش الان در وضعیت دلیوری است
 
         var orderId = testOrder.Id;
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
         // ذخیره سفارش و پیک آماده‌ی تحویل در دیتابیس کانتینر SQL Server
         using (var setupScope = Factory.Services.CreateScope())
@@ -219,14 +232,14 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
             var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Couriers.Add(testCourier); // 👈 ذخیره لایه دامین پیک
             dbContext.CustomerOrders.Add(testOrder);
-            await dbContext.SaveChangesAsync(cts.Token);
+            await dbContext.SaveChangesAsync(ct);
         }
 
         // Act - ۲. ارسال درخواست اتمام دلیوری با هدر پیک تخصیص‌داده‌شده
         Client.DefaultRequestHeaders.Remove("X-Test-UserId");
         Client.DefaultRequestHeaders.Add("X-Test-UserId", currentCourierId.ToString());
         // شلیک به اندپوینت تحویل
-        var response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/complete", null, cts.Token);
+        var response = await Client.PostAsync($"/api/v1/couriers/orders/{orderId}/complete", null, cancellationToken: ct);
 
         // Assert - ۳. راستی‌آزمایی پاسخ HTTP و پایداری وضعیت در دیتابیس
 
@@ -237,7 +250,8 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         using (var assertScope = Factory.Services.CreateScope())
         {
             var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var updatedOrder = await dbContext.CustomerOrders.FindAsync(orderId, cts.Token);
+            var updatedOrder = await dbContext.CustomerOrders
+                .FirstOrDefaultAsync(x => x.Id == orderId, ct);
 
             updatedOrder.Should().NotBeNull();
             updatedOrder!.Status.Should().Be(OrderStatus.Delivered,
@@ -251,6 +265,8 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
     [Fact]
     public async Task AcceptJob_ShouldHandleConcurrency_WhenTwoCouriersTryToAcceptSimultaneously()
     {
+        var ct = TestContext.Current.CancellationToken;
+
         // Arrange - ۱. ساخت دو پیک مجزا و فعال کردن شیفت آن‌ها
         var courierAId = Guid.NewGuid();
         var courierBId = Guid.NewGuid();
@@ -283,25 +299,38 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
             var dbContext = setupScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Couriers.AddRange(courierA, courierB);
             dbContext.CustomerOrders.Add(testOrder);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(ct);
         }
 
         // ۳. آماده‌سازی دو کلاینت HTTP مجزا برای شبیه‌سازی دو گوشی موبایل مختلف
         var clientA = Factory.CreateClient();
+        // 🚀 کپی کردن هدرهای امنیتی از کلاینت اصلی لایه تست به کلاینت‌های موازی
+        foreach (var header in Client.DefaultRequestHeaders)
+        {
+            if (header.Key != "X-Test-UserId")
+                clientA.DefaultRequestHeaders.Add(header.Key, header.Value);
+        }
         clientA.DefaultRequestHeaders.Add("X-Test-UserId", courierAId.ToString());
 
         var clientB = Factory.CreateClient();
+        foreach (var header in Client.DefaultRequestHeaders)
+        {
+            if (header.Key != "X-Test-UserId")
+                clientB.DefaultRequestHeaders.Add(header.Key, header.Value);
+        }
         clientB.DefaultRequestHeaders.Add("X-Test-UserId", courierBId.ToString());
 
         // Act - ۴. شلیک همزمان (Parallel) دو درخواست به سمت یک سفارش واحد
-        var taskA = clientA.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null);
-        var taskB = clientB.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null);
+        var taskA = clientA.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null, cancellationToken: ct);
+        var taskB = clientB.PostAsync($"/api/v1/couriers/orders/{orderId}/accept", null, cancellationToken: ct);
 
         // منتظر می‌مانیم تا هر دو درخواست در یک لحظه پردازش شوند
         var responses = await Task.WhenAll(taskA, taskB);
         var responseA = responses[0];
         var responseB = responses[1];
-
+        // 🚀 این دو خط را موقتاً برای دباگ اضافه کن:
+        var debugContentA = await responseA.Content.ReadAsStringAsync(ct);
+        var debugContentB = await responseB.Content.ReadAsStringAsync(ct);
         // Assert - ۵. راستی‌آزمایی هندل شدن مسابقه (Race Condition)
 
         // یکی از پیک‌ها حتماً باید موفق شده باشد (کد 204)
@@ -316,10 +345,11 @@ public class CourierFlowIntegrationTests : BaseIntegrationTest
         using (var assertScope = Factory.Services.CreateScope())
         {
             var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var finalizedOrder = await dbContext.CustomerOrders.FindAsync(orderId);
+            var finalizedOrder = await dbContext.CustomerOrders
+                .FirstOrDefaultAsync(x => x.Id == orderId, ct);
 
             finalizedOrder.Should().NotBeNull();
-            finalizedOrder!.CourierUserId.Should().BeOneOf(courierAId, courierBId);
+            new[] { courierAId, courierBId }.Should().Contain(finalizedOrder!.CourierUserId);
             finalizedOrder.CourierUserId.Should().NotBe(Guid.Empty, "The order must belong to one of the active racing couriers.");
         }
     }

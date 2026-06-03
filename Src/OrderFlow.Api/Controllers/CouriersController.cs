@@ -5,6 +5,7 @@ using OrderFlow.Application.Features.Couriers.AcceptDelivery;
 using OrderFlow.Application.Features.Couriers.CompleteDelivery;
 using OrderFlow.Application.Features.Couriers.GetAvailableJobs;
 using OrderFlow.Application.Features.Couriers.PickupOrder;
+using OrderFlow.Application.Features.Couriers.ToggleAvailability;
 using OrderFlow.Application.Features.Couriers.UpdateLocation;
 using OrderFlow.Application.Features.Couriers.UpdateProfile;
 

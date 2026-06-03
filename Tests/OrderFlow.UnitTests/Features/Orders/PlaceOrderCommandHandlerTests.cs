@@ -22,7 +22,6 @@ namespace OrderFlow.UnitTests.Features.Orders
 
         public PlaceOrderCommandHandlerTests()
         {
-            // ساخت پایگاه داده حافظه‌ای مجزا با نام یکتا برای جلوگیری از تداخل استیت‌ها
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: $"OrderFlow_PlaceOrder_Strict_{Guid.NewGuid()}")
                 .Options;
@@ -30,10 +29,13 @@ namespace OrderFlow.UnitTests.Features.Orders
             _dbContext = new ApplicationDbContext(options);
 
             _currentUserMock = new Mock<ICurrentUser>();
+
+            // 🚀 فیکس اصلی: تمام تست‌ها به صورت پیش‌فرض یک کاربر معتبر دارند
+            _currentUserMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
+
             _loggerMock = new Mock<ILogger<PlaceOrderCommandHandler>>();
             _publishEndpointMock = new Mock<IPublishEndpoint>();
 
-            // پیاده‌سازی عینی هماهنگ با نیازمندی اینترفیس IApplicationDbContext
             _handler = new PlaceOrderCommandHandler(
                 _dbContext,
                 _currentUserMock.Object,
@@ -44,9 +46,11 @@ namespace OrderFlow.UnitTests.Features.Orders
         [Fact]
         public async Task Handle_ShouldCreateOrderSuccessfully_WhenDataIsValid()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
-            var customerId = Guid.NewGuid();
-            _currentUserMock.Setup(x => x.UserId).Returns(customerId);
+            // 🚀 خواندن آیدی معتبری که در کانستراکتور ست شده بود
+            var customerId = _currentUserMock.Object.UserId;
 
             // ۱. نمونه‌سازی دقیق رستوران بر اساس سازنده اصلی شما
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(
@@ -63,10 +67,10 @@ namespace OrderFlow.UnitTests.Features.Orders
             restaurant.AddMenuItem("Zeytoon Parvardeh", 6.5m, "Pomegranate and walnuts");
 
             _dbContext.Restaurants.Add(restaurant);
-            await _dbContext.SaveChangesAsync(CancellationToken.None);
+            await _dbContext.SaveChangesAsync(ct);
 
             // ۳. واکشی آیتم‌ها از دیتابیس برای به دست آوردن Idهای تولید شده توسط EF Core
-            var savedItems = await _dbContext.MenuItems.Where(x => x.RestaurantId == restaurant.Id).ToListAsync();
+            var savedItems = await _dbContext.MenuItems.Where(x => x.RestaurantId == restaurant.Id).ToListAsync(ct);
             var item1Id = savedItems.First(x => x.Name == "Chelo Kabab").Id;
             var item2Id = savedItems.First(x => x.Name == "Zeytoon Parvardeh").Id;
 
@@ -87,11 +91,11 @@ namespace OrderFlow.UnitTests.Features.Orders
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await _handler.Handle(command, ct);
 
             var savedOrder = await _dbContext.CustomerOrders
                 .Include(o => o.OrderItems)
-                .FirstOrDefaultAsync(o => o.Id == result.OrderId, CancellationToken.None);
+                .FirstOrDefaultAsync(o => o.Id == result.OrderId, ct);
 
             // Assert
             result.Should().NotBeNull();
@@ -115,6 +119,8 @@ namespace OrderFlow.UnitTests.Features.Orders
         [Fact]
         public async Task Handle_WhenRestaurantDoesNotExist_ShouldThrowNotFoundException()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
             var command = new PlaceOrderCommand(
                 RestaurantId: Guid.NewGuid(),
@@ -125,7 +131,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             );
 
             // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, ct);
 
             // Assert
             await act.Should().ThrowAsync<NotFoundException>();
@@ -134,12 +140,14 @@ namespace OrderFlow.UnitTests.Features.Orders
         [Fact]
         public async Task Handle_WhenRestaurantIsDeactive_ShouldThrowNotFoundException()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(Guid.NewGuid(), "Alborz", "Berlin", 52.0, 13.0);
             restaurant.Deactivate(); // قفل کردن وضعیت رستوران در لایه دامین
 
             _dbContext.Restaurants.Add(restaurant);
-            await _dbContext.SaveChangesAsync(CancellationToken.None);
+            await _dbContext.SaveChangesAsync(ct);
 
             var command = new PlaceOrderCommand(
                 RestaurantId: restaurant.Id,
@@ -150,7 +158,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             );
 
             // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, ct);
 
             // Assert
             await act.Should().ThrowAsync<NotFoundException>();
@@ -159,10 +167,12 @@ namespace OrderFlow.UnitTests.Features.Orders
         [Fact]
         public async Task Handle_WhenMenuItemDoesNotExist_ShouldThrowNotFoundException()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(Guid.NewGuid(), "Shandiz", "Berlin", 52.0, 13.0);
             _dbContext.Restaurants.Add(restaurant);
-            await _dbContext.SaveChangesAsync(CancellationToken.None);
+            await _dbContext.SaveChangesAsync(ct);
 
             var command = new PlaceOrderCommand(
                 RestaurantId: restaurant.Id,
@@ -176,7 +186,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             );
 
             // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, ct);
 
             // Assert
             await act.Should().ThrowAsync<NotFoundException>();
@@ -185,6 +195,8 @@ namespace OrderFlow.UnitTests.Features.Orders
         [Fact]
         public async Task Handle_WhenMenuItemIsNotAvailable_ShouldThrowConflictException()
         {
+            var ct = TestContext.Current.CancellationToken;
+
             // Arrange
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(Guid.NewGuid(), "Shandiz", "Berlin", 52.0, 13.0);
             restaurant.AddMenuItem("Ghormeh Sabzi", 18.0m);
@@ -193,10 +205,10 @@ namespace OrderFlow.UnitTests.Features.Orders
             await _dbContext.SaveChangesAsync(CancellationToken.None);
 
             // استخراج آیدی تخصیص یافته به غذا جهت غیرفعال‌سازی موجودی آن
-            var savedItem = await _dbContext.MenuItems.FirstAsync(x => x.Name == "Ghormeh Sabzi");
+            var savedItem = await _dbContext.MenuItems.FirstAsync(x => x.Name == "Ghormeh Sabzi", ct);
             restaurant.MarkMenuItemUnavailable(savedItem.Id);
 
-            await _dbContext.SaveChangesAsync(CancellationToken.None);
+            await _dbContext.SaveChangesAsync(ct);
 
             var command = new PlaceOrderCommand(
                 RestaurantId: restaurant.Id,
@@ -210,7 +222,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             );
 
             // Act
-            Func<Task> act = () => _handler.Handle(command, CancellationToken.None);
+            Func<Task> act = () => _handler.Handle(command, ct);
 
             // Assert
             await act.Should().ThrowAsync<ConflictException>();

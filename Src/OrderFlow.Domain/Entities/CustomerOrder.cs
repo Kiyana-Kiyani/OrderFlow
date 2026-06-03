@@ -38,7 +38,7 @@ namespace OrderFlow.Domain.Entities
         public double CustomerLongitude { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems;
         // این فیلد را به انتهای کلاس CustomerOrder اضافه کن:
-        public byte[] RowVersion { get; private set; } = default!;
+        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
         private void RecalculateTotalAmount()
         {
