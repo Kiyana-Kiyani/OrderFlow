@@ -24,11 +24,11 @@ jobs:
 
     # ۳. بازیابی و دانلود پکیج‌های نیوگت (Nuget Restore)
     - name: Restore NuGet Packages
-      run: dotnet restore
+      run: dotnet restore OrderFlow.sln
 
     # ۴. کامپایل و بیلد کردن کل سولوشن در حالت Release
     - name: Build Solution
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build OrderFlow.sln --configuration Release --no-restore
 
     # ۵. اجرای تست‌های واحد اصلی دامین و فیچرها
     - name: Run Core Unit Tests
