@@ -56,7 +56,7 @@ namespace OrderFlow.Api.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize] // 🛑 فقط کاربران لاگین شده حق لاگ‌اوت دارند
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
@@ -65,8 +65,6 @@ namespace OrderFlow.Api.Controllers
 
             if (!result.Succeeded)
                 return BadRequest(new { Error = result.Error });
-
-            // خروج موفقیت‌آمیز معمولاً کد 204 (بدون محتوا) برمی‌گرداند
             return NoContent();
         }
 
@@ -75,7 +73,6 @@ namespace OrderFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
-            // Assuming your MediatR RefreshTokenCommand routes directly to AuthService.RefreshTokenAsync
             var result = await _sender.Send(new RefreshTokenCommand(request.ExpiredToken, request.RefreshToken), cancellationToken);
 
             if (!result.Succeeded)

@@ -75,7 +75,6 @@ public class CouriersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateCourierProfileCommand command, CancellationToken cancellationToken)
     {
-        // درخواست به همراه اطلاعات وسیله و نام به لایه Application فرستاده می‌شود
         await _sender.Send(command, cancellationToken);
         return NoContent();
     }
@@ -84,7 +83,6 @@ public class CouriersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleAvailability(CancellationToken cancellationToken)
     {
-        // ارسال کامند بدون نیاز به پارامتر ورودی، چون آیدی از توکن استخراج می‌شود
         await _sender.Send(new ToggleCourierAvailabilityCommand(), cancellationToken);
         return NoContent();
     }

@@ -120,15 +120,6 @@ namespace OrderFlow.Api.Controllers
             return NoContent();
         }
 
-
-
-
-
-
-        // Add these using statements at the top if they are missing:
-        // using OrderFlow.Application.Features.Restaurant.UpdateOrderToPreparing;
-        // using OrderFlow.Application.Features.Restaurant.MarkOrderReadyForPickup;
-
         [HttpPost("orders/{orderId:guid}/preparing")]
         [Authorize(Roles = "Admin,Owner")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
