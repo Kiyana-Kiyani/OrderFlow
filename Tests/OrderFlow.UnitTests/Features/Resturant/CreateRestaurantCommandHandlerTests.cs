@@ -17,14 +17,12 @@ namespace OrderFlow.UnitTests.Features.Restaurant
         {
             _loggerMock = new Mock<ILogger<CreateRestaurantCommandHandler>>();
 
-            // ساخت یک دیتابیس حافظه‌ای کاملاً ایزوله با نام منحصربه‌فرد برای این تست
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: $"OrderFlow_CreateRestaurant_{Guid.NewGuid()}")
                 .Options;
 
             _dbContext = new ApplicationDbContext(options);
 
-            // کلاس فیزیکی دیتابیس به عنوان پیاده‌کننده IApplicationDbContext پاس داده می‌شود
             _handler = new CreateRestaurantCommandHandler(_dbContext, _loggerMock.Object);
         }
 
@@ -47,7 +45,6 @@ namespace OrderFlow.UnitTests.Features.Restaurant
             // Act
             var result = await _handler.Handle(command, ct);
 
-            // واکشی داده ثبت شده از دیتابیس حافظه جهت راستی‌آزمایی
             var savedRestaurant = await _dbContext.Restaurants
                 .FirstOrDefaultAsync(x => x.Id == result.RestaurantId, ct);
 
@@ -64,7 +61,6 @@ namespace OrderFlow.UnitTests.Features.Restaurant
             savedRestaurant.Longitude.Should().Be(-74.0060);
             savedRestaurant.IsActive.Should().BeTrue("A newly created restaurant must be Active by default according to domain rules.");
 
-            // بررسی دقیق و قطعی ثبت لاگ در کتابخانه Moq بدون حساسیت به فرمت‌پذیری رشته
             _loggerMock.Verify(
                 logger => logger.Log(
                     LogLevel.Information,
@@ -74,7 +70,6 @@ namespace OrderFlow.UnitTests.Features.Restaurant
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
         }
-
         public async ValueTask DisposeAsync()
         {
             await _dbContext.Database.EnsureDeletedAsync();

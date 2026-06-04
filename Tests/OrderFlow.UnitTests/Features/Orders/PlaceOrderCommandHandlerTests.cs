@@ -30,7 +30,6 @@ namespace OrderFlow.UnitTests.Features.Orders
 
             _currentUserMock = new Mock<ICurrentUser>();
 
-            // 🚀 فیکس اصلی: تمام تست‌ها به صورت پیش‌فرض یک کاربر معتبر دارند
             _currentUserMock.Setup(x => x.UserId).Returns(Guid.NewGuid());
 
             _loggerMock = new Mock<ILogger<PlaceOrderCommandHandler>>();
@@ -49,10 +48,8 @@ namespace OrderFlow.UnitTests.Features.Orders
             var ct = TestContext.Current.CancellationToken;
 
             // Arrange
-            // 🚀 خواندن آیدی معتبری که در کانستراکتور ست شده بود
             var customerId = _currentUserMock.Object.UserId;
 
-            // ۱. نمونه‌سازی دقیق رستوران بر اساس سازنده اصلی شما
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(
                 ownerUserId: Guid.NewGuid(),
                 name: "Shandiz Restaurant",
@@ -62,14 +59,12 @@ namespace OrderFlow.UnitTests.Features.Orders
                 description: "Authentic Persian Food"
             );
 
-            // ۲. اضافه کردن منو از طریق رفتار اصیل دامین مدل رستوران شما
             restaurant.AddMenuItem("Chelo Kabab", 22.0m, "With premium saffron rice");
             restaurant.AddMenuItem("Zeytoon Parvardeh", 6.5m, "Pomegranate and walnuts");
 
             _dbContext.Restaurants.Add(restaurant);
             await _dbContext.SaveChangesAsync(ct);
 
-            // ۳. واکشی آیتم‌ها از دیتابیس برای به دست آوردن Idهای تولید شده توسط EF Core
             var savedItems = await _dbContext.MenuItems.Where(x => x.RestaurantId == restaurant.Id).ToListAsync(ct);
             var item1Id = savedItems.First(x => x.Name == "Chelo Kabab").Id;
             var item2Id = savedItems.First(x => x.Name == "Zeytoon Parvardeh").Id;
@@ -78,8 +73,8 @@ namespace OrderFlow.UnitTests.Features.Orders
                 RestaurantId: restaurant.Id,
                 Items: new List<PlaceOrderItemCommand>
                 {
-                    new PlaceOrderItemCommand(item1Id, 2), // 2 * 22.0 = 44.0
-                    new PlaceOrderItemCommand(item2Id, 1)  // 1 * 6.5  = 6.5
+                    new PlaceOrderItemCommand(item1Id, 2),
+                    new PlaceOrderItemCommand(item2Id, 1)
                 },
                 CustomerAddress: "Berlin Alexanderplatz",
                 CustomerLatitude: 52.5215,
@@ -100,7 +95,7 @@ namespace OrderFlow.UnitTests.Features.Orders
             // Assert
             result.Should().NotBeNull();
             result.Status.Should().Be(OrderStatus.Created);
-            result.TotalAmount.Should().Be(50.5m); // 44.0 + 6.5
+            result.TotalAmount.Should().Be(50.5m);
 
             savedOrder.Should().NotBeNull();
             savedOrder!.RestaurantId.Should().Be(restaurant.Id);
@@ -108,7 +103,6 @@ namespace OrderFlow.UnitTests.Features.Orders
             savedOrder.RestaurantName.Should().Be("Shandiz Restaurant");
             savedOrder.OrderItems.Should().HaveCount(2);
 
-            // صحت‌سنجی برودکاست اِونت در الگوی تفکیک پیام MassTransit
             _publishEndpointMock.Verify(
                 x => x.Publish(
                     It.Is<OrderPlacedIntegrationEvent>(e => e.OrderId == result.OrderId && e.TotalAmount == 50.5m),
@@ -144,7 +138,7 @@ namespace OrderFlow.UnitTests.Features.Orders
 
             // Arrange
             var restaurant = new OrderFlow.Domain.Entities.Restaurant(Guid.NewGuid(), "Alborz", "Berlin", 52.0, 13.0);
-            restaurant.Deactivate(); // قفل کردن وضعیت رستوران در لایه دامین
+            restaurant.Deactivate();
 
             _dbContext.Restaurants.Add(restaurant);
             await _dbContext.SaveChangesAsync(ct);
@@ -178,7 +172,7 @@ namespace OrderFlow.UnitTests.Features.Orders
                 RestaurantId: restaurant.Id,
                 Items: new List<PlaceOrderItemCommand>
                 {
-                    new PlaceOrderItemCommand(Guid.NewGuid(), 1) // استفاده از آیدی ناموجود منو
+                    new PlaceOrderItemCommand(Guid.NewGuid(), 1)
                 },
                 CustomerAddress: "Berlin",
                 CustomerLatitude: 52.0,
@@ -204,7 +198,6 @@ namespace OrderFlow.UnitTests.Features.Orders
             _dbContext.Restaurants.Add(restaurant);
             await _dbContext.SaveChangesAsync(CancellationToken.None);
 
-            // استخراج آیدی تخصیص یافته به غذا جهت غیرفعال‌سازی موجودی آن
             var savedItem = await _dbContext.MenuItems.FirstAsync(x => x.Name == "Ghormeh Sabzi", ct);
             restaurant.MarkMenuItemUnavailable(savedItem.Id);
 

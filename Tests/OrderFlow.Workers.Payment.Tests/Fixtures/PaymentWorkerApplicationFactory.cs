@@ -16,7 +16,6 @@ public class PaymentWorkerApplicationFactory : IAsyncLifetime
             .UseEnvironment("Testing")
             .ConfigureAppConfiguration((context, config) =>
             {
-                // شبیه‌سازی تنظیمات کانفیگ برای محیط تست
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     { "RabbitMQ:Host", "localhost" },
@@ -31,7 +30,6 @@ public class PaymentWorkerApplicationFactory : IAsyncLifetime
                 .MinimumLevel.Debug())
             .ConfigureServices((context, services) =>
             {
-                // راه‌اندازی تست‌هارنس در حافظه برای ماس‌ترنزیت
                 services.AddMassTransitTestHarness(x =>
                 {
                     x.AddConsumer<OrderPlacedConsumer>();

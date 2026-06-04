@@ -16,12 +16,10 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
     {
         _factory = factory;
 
-        // 🚀 ۱. ریست کردن تاریخچه تمام موک‌ها قبل از شروع هر تست بدون استثنا
         _factory.PushNotificationServiceMock.Invocations.Clear();
         _factory.HubClientsMock.Invocations.Clear();
         _factory.ClientProxyMock.Invocations.Clear();
 
-        // 🚀 ۲. پاک‌سازی کامل حافظه دیتابیس ریدیس کانتینر
         var redis = _factory.TestHost.Services.GetRequiredService<IConnectionMultiplexer>().GetDatabase();
         redis.Execute("FLUSHDB");
     }
@@ -36,7 +34,7 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
 
         var restaurantLat = 52.5200;
         var restaurantLng = 13.4050;
-        var orderId = Guid.NewGuid(); // آیدی یکتای این تست
+        var orderId = Guid.NewGuid();
 
         var closeCourierId = Guid.NewGuid().ToString();
         var farCourierId = Guid.NewGuid().ToString();
@@ -54,7 +52,6 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
         await harness.Bus.Publish(testEvent, ct);
 
         // Assert
-        // 🚀 تغییر طلایی: مس‌ترنزیت را مجبور می‌کنیم دقیقاً منتظر پردازش همین OrderId بماند و تاریخچه تست‌های قبلی را فیلتر کند
         var isConsumed = await harness.Consumed.Any<OrderReadyForPickupIntegrationEvent>(
             x => x.Context.Message.OrderId == orderId, ct);
         isConsumed.Should().BeTrue("Consumer must handle the specific event for this test.");
@@ -83,7 +80,7 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
 
         var restaurantLat = 52.5200;
         var restaurantLng = 13.4050;
-        var orderId = Guid.NewGuid(); // آیدی یکتای این تست
+        var orderId = Guid.NewGuid();
 
         var veryCloseCourierId = $"Courier_Close_{Guid.NewGuid()}";
         var boundaryCourierId = $"Courier_Boundary_{Guid.NewGuid()}";
@@ -106,7 +103,6 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
         await harness.Bus.Publish(testEvent, ct);
 
         // Assert
-        // 🚀 انتظار هوشمند برای همین پیام
         var isConsumed = await harness.Consumed.Any<OrderReadyForPickupIntegrationEvent>(
             x => x.Context.Message.OrderId == orderId, ct);
         isConsumed.Should().BeTrue("The consumer must catch and execute the notification logic.");
@@ -140,7 +136,7 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
 
         var restaurantLat = 52.5200;
         var restaurantLng = 13.4050;
-        var orderId = Guid.NewGuid(); // آیدی یکتای این تست
+        var orderId = Guid.NewGuid();
 
         var onlineCloseCourierId = $"Courier_Online_{Guid.NewGuid()}";
         var offlineFarCourierId = $"Courier_Offline_{Guid.NewGuid()}";
@@ -160,7 +156,6 @@ public class OrderReadyForPickupConsumerTests : IClassFixture<CourierWorkerAppli
         await harness.Bus.Publish(testEvent, ct);
 
         // Assert
-        // 🚀 انتظار هوشمند برای همین پیام
         var isConsumed = await harness.Consumed.Any<OrderReadyForPickupIntegrationEvent>(
             x => x.Context.Message.OrderId == orderId, ct);
         isConsumed.Should().BeTrue("The consumer must execute for the online courier.");

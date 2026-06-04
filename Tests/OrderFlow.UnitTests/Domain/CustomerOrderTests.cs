@@ -10,7 +10,7 @@ namespace OrderFlow.UnitTests.Domain
         [Fact]
         public void Cancel_ShouldThrowOrderStateException_WhenOrderIsAlreadyPaid()
         {
-            // Arrange - ۱. ساخت یک سفارش با کانستراکتور ۶ پارامتری دقیق شما
+            // Arrange
             var order = new CustomerOrder(
                 customerUserId: Guid.NewGuid(),
                 restaurantId: Guid.NewGuid(),
@@ -20,13 +20,12 @@ namespace OrderFlow.UnitTests.Domain
                 customerLongitude: 13.4050
             );
 
-            // تغییر وضعیت پرداخت به Succeeded طبق منطق دامین شما
             order.MarkPaymentAsSucceeded();
 
-            // Act - ۲. تلاش برای کنسل کردن سفارش پرداخت شده
+            // Act 
             Action act = () => order.Cancel();
 
-            // Assert - ۳. بررسی دقیق پرتاب اکسپشن با پیام متناظر در کد شما
+            // Assert 
             act.Should().Throw<OrderStateException>()
                 .WithMessage("Paid orders cannot be canceled due to no-refund policy constraints.");
 
@@ -36,7 +35,7 @@ namespace OrderFlow.UnitTests.Domain
         [Fact]
         public void TransitionToOutForDelivery_ShouldThrowOrderStateException_WhenCourierIsNotTheAssignedOne()
         {
-            // Arrange - ۱. آماده‌سازی شناسه‌ها
+            // Arrange 
             var assignedCourierId = Guid.NewGuid();
             var strangerCourierId = Guid.NewGuid();
 
@@ -49,16 +48,14 @@ namespace OrderFlow.UnitTests.Domain
                 customerLongitude: 13.4100
             );
 
-            // طی کردن چرخه حیات وضعیت دامین تا فاز آماده برای پیکاپ
             order.MarkPaymentAsSucceeded();
             order.StartPreparing();
             order.TransitionToReadyForPickup();
-            order.AssignCourier(assignedCourierId); // تخصیص به پیک اصلی
-
-            // Act - ۲. تلاش یک پیک دیگر (غریبه) برای تغییر وضعیت به ارسال
+            order.AssignCourier(assignedCourierId);
+            // Act 
             Action act = () => order.TransitionToOutForDelivery(strangerCourierId);
 
-            // Assert - ۳. تایید بلاک شدن توسط گارد دامین
+            // Assert
             act.Should().Throw<OrderStateException>()
                 .WithMessage("Only the assigned courier can pick up this order.");
 
@@ -68,7 +65,7 @@ namespace OrderFlow.UnitTests.Domain
         [Fact]
         public void StartPreparing_ShouldThrowOrderStateException_WhenOrderIsUnpaid()
         {
-            // Arrange - سفارش در حالت پیش‌فرض Pending (پرداخت نشده) است
+            // Arrange 
             var order = new CustomerOrder(
                 customerUserId: Guid.NewGuid(),
                 restaurantId: Guid.NewGuid(),
@@ -78,7 +75,7 @@ namespace OrderFlow.UnitTests.Domain
                 customerLongitude: 13.2000
             );
 
-            // Act - تلاش آشپزخانه برای شروع پخت بدون تایید پرداخت
+            // Act 
             Action act = () => order.StartPreparing();
 
             // Assert
@@ -89,7 +86,7 @@ namespace OrderFlow.UnitTests.Domain
         [Fact]
         public void AssignCourier_ShouldThrowOrderStateException_WhenOrderIsNotReadyForPickup()
         {
-            // Arrange - سفارش تازه ساخته شده و هنوز پخته نشده است
+            // Arrange 
             var order = new CustomerOrder(
                 customerUserId: Guid.NewGuid(),
                 restaurantId: Guid.NewGuid(),
@@ -99,7 +96,7 @@ namespace OrderFlow.UnitTests.Domain
                 customerLongitude: 13.3690
             );
 
-            // Act - تلاش پیک برای برداشتن سفارشی که هنوز آماده نیست
+            // Act
             Action act = () => order.AssignCourier(Guid.NewGuid());
 
             // Assert

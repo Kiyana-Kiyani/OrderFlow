@@ -21,15 +21,12 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
     {
         var ct = TestContext.Current.CancellationToken;
 
-        // Arrange - ۱. ساخت شناسه‌ها برای تراکنش
+        // Arrange 
         var currentCustomerId = Guid.NewGuid();
-        //    var restaurantId = Guid.NewGuid();
         var burgerItemId = Guid.NewGuid();
         var pieItemId = Guid.NewGuid();
         var ownerUserId = Guid.NewGuid();
-        // ۲. 🚀 سید کردن رستوران و آیتم‌های منو در دیتابیس واقعی کانتینر قبل از ثبت سفارش
-        // (نکته: اگر سازنده‌های Restaurant و MenuItem شما پارامترهای متفاوتی دارند، عینا مطابق دامین مدل خودت اصلاحش کن)
-        // ساخت نمونه دامین رستوران
+
         var testRestaurant = new Restaurant
         (
             ownerUserId: ownerUserId,
@@ -50,7 +47,6 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
             await dbContext.SaveChangesAsync(ct);
         }
 
-        // ساخت بدنه درخواست (این ساختار را با نام DTO واقعی خودت در پروژه عینا جایگزین کن)
         var createOrderCommand = new
         {
             RestaurantId = testRestaurant.Id,
@@ -64,33 +60,25 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
             }
         };
 
-
-        // تنظیم هدر برای اینکه CurrentUser آیدی این مشتری را به عنوان ثبت‌کننده سفارش تشخیص دهد
         Client.DefaultRequestHeaders.Remove("X-Test-UserId");
         Client.DefaultRequestHeaders.Add("X-Test-UserId", currentCustomerId.ToString());
 
-        // Act - ۲. شلیک درخواست POST به اِندپوینت ثبت سفارش
+        // Act 
         var response = await Client.PostAsJsonAsync("/api/v1/orders", createOrderCommand, ct);
 
-        // Assert - ۳. بررسی و راستی‌آزمایی صحت ثبت سفارش در سیستم
-
-        // الف) تایید پاسخ موفقیت‌آمیز لایه HTTP (معمولا 201 Created یا 200 OK)
-
+        // Assert 
         IEnumerable<HttpStatusCode> codes = new[] { HttpStatusCode.Created, HttpStatusCode.OK };
 
         response.StatusCode.Should().BeOneOf(codes, "The API should accept valid order structures from authenticated customers.");
 
-        // ب) تایید نهایی نشستن دیتا روی تیبل‌های واقعی دیتابیس SQL Server
         using (var assertScope = Factory.Services.CreateScope())
         {
             var dbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            // پیدا کردن سفارش ثبت شده در دیتابیس کانتینر بر اساس آیدی مشتری
             var savedOrder = await dbContext.CustomerOrders
                 .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.CustomerUserId == currentCustomerId, ct);
 
-            // اعتبارسنجی وضعیت‌های پایه‌ای سفارش که در سازنده دامین کپسوله شده بودند
             savedOrder.Should().NotBeNull("The order must be successfully persisted in the SQL database.");
 
             savedOrder!.RestaurantId.Should().Be(testRestaurant.Id);
@@ -100,8 +88,6 @@ public class OrderCreationIntegrationTests : BaseIntegrationTest
 
             savedOrder.Payment.Should().Be(PaymentStatus.Pending,
                 "Initial order creation requires payment verification, so status must be 'Pending'.");
-
-            // ج) اعتبارسنجی صحت محاسبه مبالغ و آیتم‌ها در لایه پایداری دیتا
             savedOrder.OrderItems.Should().HaveCount(2, "The order items collection must match the request payload.");
             savedOrder.TotalAmount.Should().Be(100m, "The domain logic should auto-calculate the total sum (2 * 45 + 1 * 10 = 100).");
         }

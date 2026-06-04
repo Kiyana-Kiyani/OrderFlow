@@ -10,7 +10,6 @@ namespace OrderFlow.IntegrationTests.Features.Restaurants
     {
         public CreateRestaurantTests(IntegrationTestWebFactory factory) : base(factory)
         {
-            // 🚀 تزریق نقش ادمین فقط و فقط برای تست‌های این کلاس
             Client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
         }
 

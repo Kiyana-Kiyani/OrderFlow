@@ -20,10 +20,7 @@ namespace OrderFlow.IntegrationTests.Fixtures
 
         public BaseIntegrationTest(WebApplicationFactory<Program> factory)
         {
-            // 1. Setup the customized factory once
             Factory = factory;
-
-            // 2. Create the client and scope from the SAME customized factory
             Client = Factory.CreateClient();
             Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("TestAuth");
 
@@ -41,7 +38,6 @@ namespace OrderFlow.IntegrationTests.Fixtures
             {
                 TablesToIgnore = new Respawn.Graph.Table[] { "__EFMigrationsHistory" }
             });
-            //   await dbContext.Database.MigrateAsync();
         }
 
         public async ValueTask DisposeAsync()

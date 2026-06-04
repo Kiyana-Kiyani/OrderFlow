@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Moq;
-using OrderFlow.Contracts.Hubs; // اگر مسیر OrderHub متفاوت است، این یوزینگ را اصلاح کن
+using OrderFlow.Contracts.Hubs;
 using OrderFlow.Worker.Courier.Abstractions;
 using OrderFlow.Worker.Courier.Consumers;
 using Serilog;
@@ -29,8 +29,6 @@ public class CourierWorkerApplicationFactory : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         await _redisContainer.StartAsync();
-
-        // کانفیگ کردن رفتار موک‌های سیگنال‌آر قبل از ساخت هاست
         HubClientsMock.Setup(x => x.Group(It.IsAny<string>())).Returns(ClientProxyMock.Object);
         var hubContextMock = new Mock<IHubContext<OrderHub>>();
         hubContextMock.Setup(x => x.Clients).Returns(HubClientsMock.Object);
@@ -57,7 +55,6 @@ public class CourierWorkerApplicationFactory : IAsyncLifetime
 
                 services.AddSignalR();
 
-                // 🚀 تزریق ایمن موک هاب سیگنال‌آر برای ردیابی متدهای کلاینت
                 services.RemoveAll<IHubContext<OrderHub>>();
                 services.AddSingleton(hubContextMock.Object);
 
@@ -70,7 +67,6 @@ public class CourierWorkerApplicationFactory : IAsyncLifetime
 
         await TestHost.StartAsync();
     }
-
     public async ValueTask DisposeAsync()
     {
         if (TestHost != null)

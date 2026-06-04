@@ -9,7 +9,7 @@ namespace OrderFlow.IntegrationTests.Features.Auth
     public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
     {
         public const string UserIdHeader = "X-Test-UserId";
-        public const string RoleHeader = "X-Test-Role"; // 🚀 هدر جدید برای کنترل داینامیک نقش‌ها
+        public const string RoleHeader = "X-Test-Role";
 
         public TestAuthHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -20,7 +20,6 @@ namespace OrderFlow.IntegrationTests.Features.Auth
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            // ۱. بررسی وجود هدر اصلی احراز هویت تست
             if (!Request.Headers.ContainsKey("Authorization"))
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
@@ -32,23 +31,18 @@ namespace OrderFlow.IntegrationTests.Features.Auth
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
 
-            // ۲. تنظیم مقدار پیش‌فرض برای آیدی کاربر
             var userId = "00000000-0000-0000-0000-000000000001";
             if (Context.Request.Headers.TryGetValue(UserIdHeader, out var customUserId))
             {
                 userId = customUserId.ToString();
             }
 
-            // ۳. ساخت لیست کلیم‌ها به صورت داینامیک
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, userId),
                 new Claim(ClaimTypes.Name, "TestUser")
             };
 
-            // ۴. 🔥 فیکس بیمه تغییرات:
-            // اگر تستِ جاری هدر X-Test-Role را فرستاده بود، همان را اعمال کن؛
-            // در غیر این صورت، پیش‌فرض را همان "Courier" قبلی بذار تا بقیه تست‌ها اصلاً دست‌نخورده بمانند.
             if (Context.Request.Headers.TryGetValue(RoleHeader, out var customRoles))
             {
                 foreach (var role in customRoles.ToString().Split(','))
@@ -58,7 +52,7 @@ namespace OrderFlow.IntegrationTests.Features.Auth
             }
             else
             {
-                claims.Add(new Claim(ClaimTypes.Role, "Courier")); // 👈 حفظ هماهنگی با تست‌های قدیمی شما
+                claims.Add(new Claim(ClaimTypes.Role, "Courier"));
             }
 
             var identity = new ClaimsIdentity(claims, "TestAuth");

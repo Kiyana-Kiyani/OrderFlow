@@ -20,18 +20,15 @@ namespace OrderFlow.IntegrationTests.Fixtures
     {
         private readonly MsSqlContainer _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
         private readonly RabbitMqContainer _rabbitContainer = new RabbitMqBuilder("rabbitmq:3-management").Build();
-        private readonly RedisContainer _redisContainer = new RedisBuilder("redis:7-alpine").Build(); // 👈 اضافه شد
+        private readonly RedisContainer _redisContainer = new RedisBuilder("redis:7-alpine").Build();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            // 🚀 فیکس طلایی گیت‌هاب: تغییر لوگر استاتیک به یک لوگر معمولی 
-            // این کار باعث می‌شود سری‌لاگ در اجرای موازی تست‌ها تلاش نکند لوگر مشترک را دوباره Freeze کند
             Serilog.Log.Logger = new Serilog.LoggerConfiguration().CreateLogger();
             builder.UseEnvironment("Testing");
 
             builder.ConfigureTestServices(services =>
             {
-                // ۱. جایگزینی دیتابیس با کانتینر واقعی SQL
                 var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
 
                 if (descriptor != null) services.Remove(descriptor);
@@ -39,7 +36,6 @@ namespace OrderFlow.IntegrationTests.Fixtures
                 services.AddDbContext<ApplicationDbContext>(options =>
                     options.UseSqlServer(_dbContainer.GetConnectionString()));
 
-                // ۲. جایگزینی احراز هویت با TestAuth
                 services.PostConfigure<AuthenticationOptions>(options =>
                 {
                     options.DefaultAuthenticateScheme = "TestAuth";
@@ -50,7 +46,6 @@ namespace OrderFlow.IntegrationTests.Fixtures
                 services.AddAuthentication()
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestAuth", options => { });
 
-                // 🚀 ۳. تزریق هارنسِ تستِ مس‌ترنزیت برای رهگیری Outbox
                 services.AddMassTransitTestHarness();
             });
 
@@ -63,8 +58,7 @@ namespace OrderFlow.IntegrationTests.Fixtures
                     { "RabbitMQ:Username", RabbitMqBuilder.DefaultUsername },
                     { "RabbitMQ:Password", RabbitMqBuilder.DefaultPassword },
                     { "ConnectionStrings:Default", _dbContainer.GetConnectionString() },
-                    { "Redis:ConnectionString", _redisContainer.GetConnectionString() }, // 👈 جلوگیری از کرش SignalR
-                    // 🚀 فیکس طلایی: تزریق آیدی پویا با هر دو فرمت آدرس‌دهی دات‌نت برای تضمین پایداری کانکشن
+                    { "Redis:ConnectionString", _redisContainer.GetConnectionString() },
                     { "Redis__ConnectionString", _redisContainer.GetConnectionString() }
                 });
             });
@@ -73,7 +67,6 @@ namespace OrderFlow.IntegrationTests.Fixtures
 
         public async ValueTask InitializeAsync()
         {
-            // استارت همزمان هر سه کانتینر
             await Task.WhenAll(
                 _dbContainer.StartAsync(),
                 _rabbitContainer.StartAsync(),
