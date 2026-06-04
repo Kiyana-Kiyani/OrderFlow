@@ -1,7 +1,4 @@
 ﻿namespace OrderFlow.Application.Features.Admin.GetAllRols
 {
-    public record GetAllRolsResponse
-    (
-        IReadOnlyList<string> Roles
-        );
+    public record GetAllRolsResponse(IReadOnlyList<string> Roles);
 }

@@ -11,7 +11,7 @@ namespace OrderFlow.Application.Features.Admin.AssignRoleToUser
         private readonly IAdminService _adminService;
         private readonly ILogger<AssignRoleToUserCommandHandler> _logger;
         private readonly ICurrentUser _currentUser;
-        private readonly IPublisher _publisher; // 👈 پابلیشر MediatR اضافه شد
+        private readonly IPublisher _publisher;
         private readonly IApplicationDbContext _dbContext;
 
         public AssignRoleToUserCommandHandler(IAdminService adminService, ILogger<AssignRoleToUserCommandHandler> logger, ICurrentUser currentUser, IPublisher publisher, IApplicationDbContext dbContext)
@@ -38,10 +38,9 @@ namespace OrderFlow.Application.Features.Admin.AssignRoleToUser
             }
             catch (Exception ex)
             {
-                // در صورت بروز هرگونه خطایی در لایه آیدنتیتی یا هندلر مدیا‌آر، کل تغییرات لغو می‌شود
                 await transaction.RollbackAsync(cancellationToken);
                 _logger.LogError(ex, "Failed to assign role and sync profile for user {UserId}", request.UserId);
-                throw; // پرتاب مجدد خطا برای لایه API
+                throw;
             }
         }
     }
