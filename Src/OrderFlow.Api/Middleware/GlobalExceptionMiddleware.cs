@@ -1,9 +1,9 @@
 ﻿
-using System.Net;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OrderFlow.Application.Common.Exceptions;
 using OrderFlow.Domain.Exceptions;
+using System.Net;
 
 namespace OrderFlow.Api.Middleware
 {
