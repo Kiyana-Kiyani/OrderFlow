@@ -13,7 +13,6 @@ namespace OrderFlow.Workers.Payment.Consumers
         }
         public async Task Consume(ConsumeContext<OrderPlacedIntegrationEvent> context)
         {
-            _logger.LogInformation("zzzzzz");
             var message = context.Message;
 
             await Task.Delay(2000);

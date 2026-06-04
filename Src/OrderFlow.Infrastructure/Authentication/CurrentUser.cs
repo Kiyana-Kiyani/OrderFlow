@@ -32,6 +32,5 @@ namespace OrderFlow.Infrastructure.Authentication
             User.FindAll(ClaimTypes.Role)
             .Select(x => x.Value).
             ToList().AsReadOnly();
-
     }
 }

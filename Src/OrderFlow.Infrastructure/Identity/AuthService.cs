@@ -18,7 +18,7 @@ namespace OrderFlow.Infrastructure.Identity
         private readonly SignInManager<AppIdentityUser> _signInManager;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
         private readonly JwtOptions _jwtOptions;
-        private readonly IApplicationDbContext _dbContext; // 👈 اضافه شد
+        private readonly IApplicationDbContext _dbContext;
 
         public AuthService(UserManager<AppIdentityUser> userManager, SignInManager<AppIdentityUser> signInManager,
             IJwtTokenGenerator jwtTokenGenerator, IOptions<JwtOptions> jwtOptions, IApplicationDbContext dbContext)
@@ -76,9 +76,8 @@ namespace OrderFlow.Infrastructure.Identity
             if (user is null)
                 return AuthResult.Failure("User not found.");
 
-            // 🛑 باطل کردن رفرش توکن کاربر در دیتابیس
             user.RefreshToken = null;
-            user.RefreshTokenExpiryTime = DateTime.MinValue; // یا DateTime.MinValue
+            user.RefreshTokenExpiryTime = DateTime.MinValue;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -87,9 +86,6 @@ namespace OrderFlow.Infrastructure.Identity
                 return AuthResult.Failure($"Failed to process logout: {errors}");
             }
 
-            // (اختیاری) اگر از SignInManager برای کوکی‌ها هم استفاده می‌کنی
-            // await _signInManager.SignOutAsync(); 
-
             return AuthResult.SuccessfullLogout();
         }
 
@@ -97,10 +93,8 @@ namespace OrderFlow.Infrastructure.Identity
         private async Task<AuthResult> GenerateAuthResultForUserAsync(AppIdentityUser user)
         {
             var roles = await _userManager.GetRolesAsync(user);
-            // 🛠️ استخراج کلیم‌های اختصاصی موقع لاگین یا ریجستر
             var customClaims = await BuildCustomClaimsAsync(user.Id, roles);
 
-            // پاس دادن دیکشنری کلیم‌ها به توکن‌ساز
             var token = _jwtTokenGenerator.GenerateToken(user.Id, user.NormalizedEmail!, roles, customClaims);
 
             var refreshToken = _jwtTokenGenerator.GenerateRefreshToken();
@@ -110,7 +104,6 @@ namespace OrderFlow.Infrastructure.Identity
 
             return AuthResult.Success(token, refreshToken, user.Id);
         }
-
 
         public async Task<AuthResult> RefreshTokenAsync(string expiredToken, string refreshToken, CancellationToken cancellationToken)
         {
@@ -136,8 +129,6 @@ namespace OrderFlow.Infrastructure.Identity
 
             return AuthResult.Success(newAccessToken, newRefreshToken, user.Id);
         }
-
-        // 🎯 متد کمکی جدید برای ساخت کلیم‌های داینامیک و اختصاصی بدون کثیف کردن کلاس توکن‌ساز
         private async Task<Dictionary<string, string>> BuildCustomClaimsAsync(Guid userId, IEnumerable<string> roles)
         {
             var customClaims = new Dictionary<string, string>();
@@ -154,13 +145,9 @@ namespace OrderFlow.Infrastructure.Identity
                     customClaims.Add("RestaurantId", restaurantId.ToString());
                 }
             }
-
-            // اگر فردا روزی نقش پیک یا ادمین هم کلیم اختصاصی خواست، خیلی تمیز همین‌جا زیرش اضافه می‌کنی
-
             return customClaims;
         }
 
-        // Helper method to pull claims out of an already EXPIRED access token safely
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -171,7 +158,7 @@ namespace OrderFlow.Infrastructure.Identity
                 ValidIssuer = _jwtOptions.Issuer,
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey)),
-                ValidateLifetime = false // CRITICAL: We want to read claims even if expired!
+                ValidateLifetime = false
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -184,5 +171,4 @@ namespace OrderFlow.Infrastructure.Identity
             return principal;
         }
     }
-
 }

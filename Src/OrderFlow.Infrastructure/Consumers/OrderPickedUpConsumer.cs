@@ -17,7 +17,6 @@ namespace OrderFlow.Infrastructure.Consumers
         {
             var message = context.Message;
 
-            // صدا زدن متد زنده سیگنال‌آر برای آپدیت مانیتور مشتری
             await _notificationService.NotifyCustomerOfOrderStatusAsync(
                 customerId: message.CustomerId,
                 orderId: message.OrderId,

@@ -52,10 +52,8 @@ namespace OrderFlow.Infrastructure.Authentication
             if (!string.IsNullOrWhiteSpace(email))
                 claims.Add(new Claim(ClaimTypes.Email, email));
 
-            // اضافه کردن نقش‌ها
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            // اضافه کردن هوشمند کلیم‌های اختصاصی بدون وابستگی به جدول خاص
             if (customClaims is not null)
             {
                 foreach (var claim in customClaims)

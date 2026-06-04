@@ -9,8 +9,6 @@ namespace OrderFlow.Infrastructure.Notifications
     {
         private readonly IDatabase _redisDb;
         private readonly ILogger<OrderHubFilter> _logger;
-        // این متد توکارِ خود SignalR است و به محض اتصال کلاینت، خودکار اجرا میشه
-
         public OrderHubFilter(IConnectionMultiplexer redisConnection, ILogger<OrderHubFilter> logger)
         {
             _redisDb = redisConnection.GetDatabase();
@@ -18,7 +16,6 @@ namespace OrderFlow.Infrastructure.Notifications
         }
         public async Task OnConnectedAsync(HubLifetimeContext context, Func<HubLifetimeContext, Task> next)
         {
-            // ما فقط می‌خواهیم اتصالات مربوط به OrderHub را مدیریت کنیم
             if (context.Hub is Contracts.Hubs.OrderHub)
             {
                 var userId = context.Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -53,36 +50,28 @@ namespace OrderFlow.Infrastructure.Notifications
                     }
                     else if (role == "Customer" && !string.IsNullOrEmpty(userId))
                     {
-                        // مشتری به گروه اختصاصی خودش وصل میشه تا وضعیت سفارش خودش رو دنبال کنه
                         await context.Hub.Groups.AddToGroupAsync(context.Context.ConnectionId, $"Customer_{userId}");
                     }
                     else if (role == "Admin")
                     {
-                        // ادمین‌ها به گروه کل سیستم وصل میشن
                         await context.Hub.Groups.AddToGroupAsync(context.Context.ConnectionId, "Admins");
                     }
                 }
 
             }
-
-            await next(context); // اجازه بده کلاینت متصل شود
+            await next(context);
         }
 
-        // شنود زنده به محض قطع اتصال کلاینت
-        // Allows a restaurant dashboard client to join their specific group room
-        // وقتی کاربر قطع متصل شد، خودش خودکار از گروه‌ها حذف میشه، اما متدش اینه:
         public async Task OnDisconnectedAsync(HubLifetimeContext context, Exception? exception, Func<HubLifetimeContext, Exception?, Task> next)
         {
             if (context.Hub is Contracts.Hubs.OrderHub)
             {
                 var userId = context.Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var role = context.Context.User?.FindFirst(ClaimTypes.Role)?.Value;
-                // نیازی به حذف دستی از گروه‌ها نیست، SignalR خودش مدیریت میکنه
 
                 if (role == "Courier" && !string.IsNullOrEmpty(userId))
                 {
                     string presenceKey = $"presence:courier:{userId.ToLowerInvariant()}";
-                    // حذف وضعیت آنلاین از ردیس
                     await _redisDb.KeyDeleteAsync(presenceKey);
                     _logger.LogInformation("Courier {UserId} disconnected. Presence removed from Redis.", userId);
                 }
@@ -90,6 +79,5 @@ namespace OrderFlow.Infrastructure.Notifications
 
             await next(context, exception);
         }
-
     }
 }

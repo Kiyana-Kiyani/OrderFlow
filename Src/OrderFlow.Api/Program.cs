@@ -82,10 +82,10 @@ namespace OrderFlow.Api
                 {
                     options.AddPolicy("AllowSignalR", policy =>
                     {
-                        policy.SetIsOriginAllowed(_ => true) // در محیط توسعه، همه دامنه‌ها را مجاز می‌کند
+                        policy.SetIsOriginAllowed(_ => true)
                               .AllowAnyHeader()
                               .AllowAnyMethod()
-                              .AllowCredentials(); // 👈 این خط برای ارسال توکن در سیگنال‌آر ۱۰۰٪ حیاتی است
+                              .AllowCredentials();
                     });
                 });
                 var app = builder.Build();
@@ -129,8 +129,7 @@ namespace OrderFlow.Api
                 app.UseAuthorization();
                 app.MapControllers();
 
-                // ... down below where you call app.UseEndpoints or app.MapControllers():
-                app.MapHub<OrderHub>("/hubs/orders"); // 2. Map the physical WebSocket route endpoint
+                app.MapHub<OrderHub>("/hubs/orders");
 
 
                 app.MapHealthChecks("/health/live", new HealthCheckOptions
