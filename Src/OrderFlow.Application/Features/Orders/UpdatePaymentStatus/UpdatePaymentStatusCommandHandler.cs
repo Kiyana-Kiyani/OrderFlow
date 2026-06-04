@@ -28,13 +28,11 @@ namespace OrderFlow.Application.Features.Orders.UpdatePaymentStatus
             if (order is null)
                 throw new NotFoundException("Order", request.OrderId);
 
-            // Direct the state transition based on the incoming consumer outcome flag
             if (request.IsSucceeded)
             {
                 order.MarkPaymentAsSucceeded();
                 _logger.LogInformation("Payment confirmed for Order {OrderId}. Status is ready for kitchen review.", order.Id);
 
-                // NEW: Push the live notification to the kitchen's active tablet/screen dashboard
                 await _notificationService.NotifyRestaurantOfNewOrderAsync(
                     order.RestaurantId,
                     order.Id,
@@ -47,8 +45,6 @@ namespace OrderFlow.Application.Features.Orders.UpdatePaymentStatus
             }
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-
-
         }
     }
 }

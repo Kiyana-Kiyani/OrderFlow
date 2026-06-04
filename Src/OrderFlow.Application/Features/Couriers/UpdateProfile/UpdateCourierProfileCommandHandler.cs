@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
-using OrderFlow.Application.Common.Exceptions; // فرض بر وجود NotFoundException اختصاصی تو
+using OrderFlow.Application.Common.Exceptions;
 
 namespace OrderFlow.Application.Features.Couriers.UpdateProfile;
 
@@ -19,7 +19,6 @@ public class UpdateCourierProfileCommandHandler : IRequestHandler<UpdateCourierP
 
     public async Task Handle(UpdateCourierProfileCommand request, CancellationToken cancellationToken)
     {
-        // ۱. پیدا کردن پروفایل پیک لاگین شده بر اساس آیدی توکن او
         var courier = await _dbContext.Couriers
             .FirstOrDefaultAsync(c => c.Id == _currentUser.UserId, cancellationToken);
 
@@ -28,11 +27,8 @@ public class UpdateCourierProfileCommandHandler : IRequestHandler<UpdateCourierP
             throw new NotFoundException("Courier Profile", _currentUser.UserId);
         }
 
-        // ۲. 🔥 استفاده از متدهای کپسوله‌شده دامین مدل برای اعمال تغییرات امن
         courier.UpdateName(request.Name);
         courier.UpdateVehicleType(request.VehicleType);
-
-        // ۳. ذخیره تغییرات در دیتابیس
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

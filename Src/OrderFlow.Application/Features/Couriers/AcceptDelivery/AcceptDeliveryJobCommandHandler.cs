@@ -33,17 +33,14 @@ public class AcceptDeliveryJobCommandHandler : IRequestHandler<AcceptDeliveryJob
             _logger.LogWarning("Courier {CourierId} failed to accept delivery. Order {OrderId} not found.", _currentUser.UserId, request.OrderId);
             throw new KeyNotFoundException($"Order with ID {request.OrderId} was not found.");
         }
-        // قانون دامین: بررسی آیدی پیک و تغییر وضعیت به Assign شده
         order.AssignCourier(_currentUser.UserId);
 
         try
         {
-            // 👈 ذخیره تغییرات در دیتابیس
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException ex)
         {
-            // 🚀 مچ‌گیری هوشمندانه خطای همزمانی دیتابیس و تبدیل آن به خطای لایه Application
             _logger.LogWarning(ex, "Concurrency conflict occurred. Order {OrderId} was already claimed by another courier.", request.OrderId);
 
             throw new ConflictException("This order has already been claimed by another courier. Please refresh your available jobs list.");

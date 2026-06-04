@@ -26,8 +26,6 @@ public class StartPreparingOrderCommandHandler : IRequestHandler<StartPreparingO
             _logger.LogWarning("Failed to accept order. Order {OrderId} was not found.", request.OrderId);
             throw new KeyNotFoundException($"Order with ID {request.OrderId} was not found.");
         }
-
-        // Uses your Domain method
         order.StartPreparing();
 
         await _dbContext.SaveChangesAsync(cancellationToken);

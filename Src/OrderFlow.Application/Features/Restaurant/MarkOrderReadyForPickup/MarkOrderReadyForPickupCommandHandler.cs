@@ -40,33 +40,23 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
             throw new KeyNotFoundException($"Restaurant with ID {request.RestaurantId} was not found.");
         }
 
-        // Transition domain state (This method inside Domain layer should also raise your OrderReadyForPickupDomainEvent)
-
         if (_dbContext is DbContext efDbContext)
         {
 
             using var transaction = await efDbContext.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-
-                // 1. Transition the core domain state
                 order.TransitionToReadyForPickup();
 
-                // 2. Create your integration contract matching pure MassTransit defaults
                 var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(
                     order.Id, order.RestaurantId, order.RestaurantName, DateTime.UtcNow,
                     restaurant.Address, restaurant.Latitude, restaurant.Longitude,
                     order.CustomerAddress, order.CustomerLatitude, order.CustomerLongitude);
 
-                // 3. FIX: Publish BEFORE SaveChangesAsync.
-                // Outbox intercepts this and adds internal event entities into the EF Change Tracker.
                 await _publishEndpoint.Publish(integrationEvent, cancellationToken);
 
-                // 4. Persist BOTH the order change and the outbox events to the DB in one atomic payload
                 await _dbContext.SaveChangesAsync(cancellationToken);
 
-
-                // 5. Commit safely
                 await transaction.CommitAsync(cancellationToken);
 
             }
@@ -79,7 +69,6 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
         }
         else
         {
-            // Fallback block to ensure testability if running unit tests with mock contexts
             order.TransitionToReadyForPickup();
 
             var integrationEvent = OrderReadyForPickupIntegrationEvent.Create(
@@ -93,7 +82,6 @@ public class MarkOrderReadyForPickupCommandHandler : IRequestHandler<MarkOrderRe
             await _publishEndpoint.Publish(integrationEvent, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
-
 
         _logger.LogInformation("Order {OrderId} has been marked as Ready For Pickup and logged successfully.", order.Id);
 

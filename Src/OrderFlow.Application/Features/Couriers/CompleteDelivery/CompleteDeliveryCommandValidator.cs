@@ -1,12 +1,13 @@
 ﻿using FluentValidation;
 
-namespace OrderFlow.Application.Features.Couriers.CompleteDelivery;
-
-public class CompleteDeliveryCommandValidator : AbstractValidator<CompleteDeliveryCommand>
+namespace OrderFlow.Application.Features.Couriers.CompleteDelivery
 {
-    public CompleteDeliveryCommandValidator()
+    public class CompleteDeliveryCommandValidator : AbstractValidator<CompleteDeliveryCommand>
     {
-        RuleFor(x => x.OrderId)
-            .NotEmpty().WithMessage("OrderId is required.");
+        public CompleteDeliveryCommandValidator()
+        {
+            RuleFor(x => x.OrderId)
+                .NotEmpty().WithMessage("OrderId is required.");
+        }
     }
 }

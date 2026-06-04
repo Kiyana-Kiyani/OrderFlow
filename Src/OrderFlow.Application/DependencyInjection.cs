@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Application.Behaviors;
 using OrderFlow.Application.Security.Authorization;
-using System.Reflection;
 
 namespace OrderFlow.Application
 {

@@ -4,7 +4,6 @@ namespace OrderFlow.Application.Features.Couriers.UpdateProfile;
 
 public class UpdateCourierProfileCommandValidator : AbstractValidator<UpdateCourierProfileCommand>
 {
-    // 🚀 اصلاح شد: تبدیل به متد سازنده استاندارد بدون کلمه کلیدی class
     public UpdateCourierProfileCommandValidator()
     {
         RuleFor(x => x.Name)

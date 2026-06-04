@@ -59,11 +59,6 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
             await _dbContext.CustomerOrders.AddAsync(order);
             var orderPlaceEvent = OrderPlacedIntegrationEvent.
                    CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
-            //If you don't write that line, you face a direct wall because your application
-            //layer only knows about the interface IApplicationDbContext.
-            // Interfaces are great for keeping your code decoupled,
-            // but they only let you see what you explicitly declared inside them.
-
 
             await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
 

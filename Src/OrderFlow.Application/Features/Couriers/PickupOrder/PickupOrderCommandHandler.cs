@@ -36,7 +36,6 @@ public class PickupOrderCommandHandler : IRequestHandler<PickupOrderCommand, Pic
             _logger.LogWarning("Courier {CourierId} failed to pick up order. Order {OrderId} not found.", _currentUser.UserId, request.OrderId);
             throw new KeyNotFoundException($"Order with ID {request.OrderId} was not found.");
         }
-        // Domain rule: Confirms the picking courier is the assigned driver, then mutates state to OutForDelivery
         order.TransitionToOutForDelivery(_currentUser.UserId);
         var integrationEvent = new OrderPickedUpIntegrationEvent(
             OrderId: order.Id,
@@ -44,11 +43,8 @@ public class PickupOrderCommandHandler : IRequestHandler<PickupOrderCommand, Pic
             CourierId: order.CourierUserId,
             AcceptedAt: DateTime.UtcNow);
 
-
-        // 👈 اول: پابلیش روی پترن ترنزکشنال Outbox (اضافه شدن به Change Tracker دیتابیس)
         await _publishEndpoint.Publish(integrationEvent, cancellationToken);
 
-        // 👈 دوم: ذخیره همزمان دیتای اصلی بیزینس و ردیف اوت‌باکس در دیتابیس
         await _dbContext.SaveChangesAsync(cancellationToken);
 
 

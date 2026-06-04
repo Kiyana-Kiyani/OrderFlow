@@ -3,6 +3,5 @@
     public record RegisterUserResponse(
         Guid UserId,
         string Token,
-        string RefreshToken
-    );
+        string RefreshToken);
 }
