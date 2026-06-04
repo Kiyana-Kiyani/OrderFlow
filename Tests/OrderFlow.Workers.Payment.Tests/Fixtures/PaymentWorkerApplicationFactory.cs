@@ -1,10 +1,10 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using OrderFlow.Workers.Payment.Consumers;
+using OrderFlow.Worker.Payment.Consumers;
 using Serilog;
 
-namespace OrderFlow.Workers.Payment.Tests.Fixtures;
+namespace OrderFlow.Worker.Payment.Tests.Fixtures;
 
 public class PaymentWorkerApplicationFactory : IAsyncLifetime
 {

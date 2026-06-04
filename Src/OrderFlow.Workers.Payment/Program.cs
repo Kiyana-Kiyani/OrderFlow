@@ -1,5 +1,5 @@
 using MassTransit;
-using OrderFlow.Workers.Payment.Consumers;
+using OrderFlow.Worker.Payment.Consumers;
 
 using Serilog;
 

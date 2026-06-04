@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\OrderFlow.Contracts\OrderFlow.Contracts.csproj" />
-    <ProjectReference Include="..\..\Src\OrderFlow.Workers.Payment\OrderFlow.Workers.Payment.csproj" />
+    <ProjectReference Include="..\..\Src\OrderFlow.Workers.Payment\OrderFlow.Worker.Payment.csproj" />
   </ItemGroup>
 
   <ItemGroup>
