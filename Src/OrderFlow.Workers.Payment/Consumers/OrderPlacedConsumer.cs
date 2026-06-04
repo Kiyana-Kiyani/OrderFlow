@@ -1,7 +1,7 @@
 using MassTransit;
 using OrderFlow.Contracts.IntegrationEvents;
 
-namespace OrderFlow.Workers.Payment.Consumers
+namespace OrderFlow.Worker.Payment.Consumers
 {
     public class OrderPlacedConsumer : IConsumer<OrderPlacedIntegrationEvent>
     {

@@ -23,13 +23,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Infrastructure", 
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Workers.Payment", "Src\OrderFlow.Workers.Payment\OrderFlow.Workers.Payment.csproj", "{4434621A-E123-9D8C-570C-7244968FC18D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Worker.Payment", "Src\OrderFlow.Workers.Payment\OrderFlow.Worker.Payment.csproj", "{4434621A-E123-9D8C-570C-7244968FC18D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Worker.Courier", "Src\OrderFlow.Worker.Courier\OrderFlow.Worker.Courier.csproj", "{28713A6E-C5C1-46E6-91D7-FF5FB933138C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Worker.Courier.Tests", "Tests\OrderFlow.Worker.Courier.Tests\OrderFlow.Worker.Courier.Tests.csproj", "{F6007158-45EF-4386-B291-B10061E48A13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Workers.Payment.Tests", "Tests\OrderFlow.Workers.Payment.Tests\OrderFlow.Workers.Payment.Tests.csproj", "{5748C02E-205D-48DD-9668-9A7DFC551D6F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderFlow.Worker.Payment.Tests", "Tests\OrderFlow.Workers.Payment.Tests\OrderFlow.Worker.Payment.Tests.csproj", "{5748C02E-205D-48DD-9668-9A7DFC551D6F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -2,9 +2,9 @@
 using MassTransit.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using OrderFlow.Contracts.IntegrationEvents;
-using OrderFlow.Workers.Payment.Tests.Fixtures;
+using OrderFlow.Worker.Payment.Tests.Fixtures;
 
-namespace OrderFlow.Workers.Payment.Tests.Consumers;
+namespace OrderFlow.Worker.Payment.Tests.Consumers;
 
 public class OrderPlacedConsumerTests : IClassFixture<PaymentWorkerApplicationFactory>
 {
