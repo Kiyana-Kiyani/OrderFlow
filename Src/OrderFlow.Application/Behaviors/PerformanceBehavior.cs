@@ -1,11 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OrderFlow.Application.Behaviors
 {
@@ -27,7 +22,7 @@ namespace OrderFlow.Application.Behaviors
             var response = await next();
 
             var elapsedMilliseconds = _timer.ElapsedMilliseconds;
-         
+
             if (elapsedMilliseconds > 500)
             {
                 var requestName = typeof(TRequest).Name;
