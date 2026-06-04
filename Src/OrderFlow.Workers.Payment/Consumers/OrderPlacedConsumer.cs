@@ -13,7 +13,6 @@ namespace OrderFlow.Workers.Payment.Consumers
         }
         public async Task Consume(ConsumeContext<OrderPlacedIntegrationEvent> context)
         {
-            _logger.LogInformation("zzzzzz");
             var message = context.Message;
 
             await Task.Delay(2000);
@@ -22,18 +21,14 @@ namespace OrderFlow.Workers.Payment.Consumers
             if (paymentSuccess)
             {
                 _logger.LogInformation("Payment successful for Order {OrderId}!", message.OrderId);
-                await context.Publish(PaymentSucceededIntegrationEvent.CreateNew(message.OrderId)
-                    , x => x.SetRoutingKey("order.placed.success"));
+                await context.Publish(PaymentSucceededIntegrationEvent.CreateNew(message.OrderId));
             }
             else
             {
                 _logger.LogWarning("Payment failed for Order {OrderId}.", message.OrderId);
-                await context.Publish(PaymentFailedIntegrationEvent.CreateNew(message.OrderId, "Declined by bank.")
-                    , x => x.SetRoutingKey("order.placed.failed"));
+                await context.Publish(PaymentFailedIntegrationEvent.CreateNew(message.OrderId, "Declined by bank."));
             }
         }
-
-
     }
 }
 

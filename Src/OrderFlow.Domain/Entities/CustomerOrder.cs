@@ -7,28 +7,37 @@ namespace OrderFlow.Domain.Entities
     {
         private readonly List<OrderItem> _orderItems = new();
 
-        private CustomerOrder() { }
-        public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName)
+        public CustomerOrder(Guid customerUserId, Guid restaurantId, string restaurantName, string customerAddress, double customerLatitude, double customerLongitude)
         {
             if (customerUserId == Guid.Empty) throw new ArgumentException("Customer is required.", nameof(customerUserId));
             if (restaurantId == Guid.Empty) throw new ArgumentException("Restaurant is required.", nameof(restaurantId));
             Id = Guid.NewGuid();
             CustomerUserId = customerUserId;
+            CustomerAddress = customerAddress;
+            CustomerLatitude = customerLatitude;
+            CustomerLongitude = customerLongitude;
             RestaurantId = restaurantId;
             RestaurantName = restaurantName;
             Status = OrderStatus.Created;
             CreatedAt = DateTime.UtcNow;
+            Payment = PaymentStatus.Pending;
         }
+        private CustomerOrder() { }
 
         public Guid Id { get; private set; }
         public Guid CustomerUserId { get; private set; }
+        public Guid CourierUserId { get; private set; } = Guid.Empty;
         public Guid RestaurantId { get; private set; }
-        public string RestaurantName { get; private set; }
+        public string RestaurantName { get; private set; } = default!;
         public OrderStatus Status { get; private set; }
+        public PaymentStatus Payment { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public decimal TotalAmount { get; private set; }
+        public string CustomerAddress { get; private set; } = default!;
+        public double CustomerLatitude { get; private set; }
+        public double CustomerLongitude { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems;
-
+        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
         private void RecalculateTotalAmount()
         {
@@ -55,14 +64,6 @@ namespace OrderFlow.Domain.Entities
             RecalculateTotalAmount();
         }
 
-        //private void ChangeQuantity(Guid orderItemId, int quantity)
-        //{
-        //    EnsureEditable();
-        //    var orderItem = GetItem(orderItemId);
-        //    orderItem.ChangeQuantity(quantity);
-        //    RecalculateTotalAmount();
-        //}
-
         public void RemoveItem(Guid orderItemId)
         {
             EnsureEditable();
@@ -82,46 +83,87 @@ namespace OrderFlow.Domain.Entities
         {
             if (Status != OrderStatus.Created)
                 throw new OrderStateException("Order items can only be changed while order is in Created status.");
+
+            if (Status == OrderStatus.Cancelled)
+                throw new OrderStateException("Cannot modify a cancelled order.");
+        }
+        public void MarkPaymentAsSucceeded()
+        {
+            if (Payment != PaymentStatus.Pending)
+                throw new OrderStateException("Payment is not pending.");
+
+            Payment = PaymentStatus.Succeeded;
         }
 
-        public void Accept()
+        public void MarkPaymentAsFailed()
         {
+            if (Payment != PaymentStatus.Pending)
+                throw new OrderStateException("Payment is not pending.");
 
-            if (Status != OrderStatus.Created)
-                throw new OrderStateException("Only created orders can be accepted.");
-
-            Status = OrderStatus.Accepted;
-
+            Payment = PaymentStatus.Failed;
+            Status = OrderStatus.Cancelled;
         }
 
-        public void Reject()
+        public void StartPreparing()
         {
+            if (Payment != PaymentStatus.Succeeded)
+                throw new OrderStateException("Cannot start preparation on an unpaid order.");
+
             if (Status != OrderStatus.Created)
-                throw new OrderStateException("Only created orders can be rejected.");
-            Status = OrderStatus.Rejected;
+                throw new OrderStateException("Order is not in a valid state to start preparing.");
+
+            Status = OrderStatus.Preparing;
         }
 
         public void Cancel()
         {
+            if (Payment == PaymentStatus.Succeeded)
+                throw new OrderStateException("Paid orders cannot be canceled due to no-refund policy constraints.");
+
             if (Status != OrderStatus.Created)
-                throw new OrderStateException("Only created orders can be Canceled.");
+                throw new OrderStateException("Only pending orders can be canceled.");
 
             Status = OrderStatus.Cancelled;
         }
 
-        public void Dispatch()
+        public void TransitionToReadyForPickup()
         {
-            if (Status != OrderStatus.Accepted)
-                throw new OrderStateException("Only accepted orders can be sent.");
+            if (Status != OrderStatus.Preparing)
+                throw new OrderStateException("Only orders that are being prepared can be sent.");
+            Status = OrderStatus.ReadyForPickup;
+        }
+        public void AssignCourier(Guid courierId)
+        {
+            if (courierId == Guid.Empty)
+                throw new ArgumentException("Courier ID cannot be empty.", nameof(courierId));
+
+            if (Status != OrderStatus.ReadyForPickup)
+                throw new OrderStateException("An order must be ready for pickup before a courier can claim it.");
+
+            if (CourierUserId != Guid.Empty)
+                throw new OrderStateException("This order has already been claimed by another courier.");
+
+            CourierUserId = courierId;
+        }
+        public void TransitionToOutForDelivery(Guid courierId)
+        {
+            if (Status != OrderStatus.ReadyForPickup)
+                throw new OrderStateException("Only orders ready for pickup can be transitioned to delivery.");
+
+            if (CourierUserId != courierId)
+                throw new OrderStateException("Only the assigned courier can pick up this order.");
+
             Status = OrderStatus.OutForDelivery;
         }
-
-        public void Deliver()
+        public void TransitionToDelivered(Guid courierId)
         {
             if (Status != OrderStatus.OutForDelivery)
-                throw new OrderStateException("Only orders that are being sent can be marked as delivered.");
+                throw new OrderStateException("Only orders that are out for delivery can be marked as delivered.");
+
+            if (CourierUserId != courierId)
+                throw new OrderStateException("Only the assigned courier can finalize this delivery.");
+
             Status = OrderStatus.Delivered;
         }
-
     }
 }

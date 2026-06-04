@@ -1,12 +1,11 @@
-using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
-using OrderFlow.Api.Consumers;
 using OrderFlow.Api.Middleware;
 using OrderFlow.Api.Swagger;
 using OrderFlow.Application;
+using OrderFlow.Contracts.Hubs;
 using OrderFlow.Infrastructure.DependencyInjection;
 using OrderFlow.Infrastructure.Persistence;
 using OrderFlow.Infrastructure.Persistence.Seed;
@@ -37,29 +36,7 @@ namespace OrderFlow.Api
                         .WriteTo.Console()
                         .WriteTo.Seq(context.Configuration["Seq:Url"]!));
 
-                builder.Services.AddInfrastructure(builder.Configuration,
-                    configureConsumers: x =>
-                    {
-                        x.AddConsumer<PaymentSucceededConsumer>();
-                        x.AddConsumer<PaymentFailedConsumer>();
-                    },
-
-                    configureRabbitMqEndpoints: (context, cfg) =>
-                    {
-                        cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
-                        {
-                            e.SetQuorumQueue();
-                            e.ConfigureConsumeTopology = false;
-                            e.Bind("Payment.Result", s =>
-                            {
-                                s.RoutingKey = "order.placed.*";
-                                s.ExchangeType = "topic";
-                            });
-
-                            e.ConfigureConsumer<PaymentSucceededConsumer>(context);
-                            e.ConfigureConsumer<PaymentFailedConsumer>(context);
-                        });
-                    });
+                builder.Services.AddInfrastructure(builder.Configuration);
 
                 builder.Services.AddApplication();
 
@@ -101,7 +78,16 @@ namespace OrderFlow.Api
                         failureStatus: HealthStatus.Unhealthy,
                         name: "sqlserver",
                         tags: new[] { "ready" });
-
+                builder.Services.AddCors(options =>
+                {
+                    options.AddPolicy("AllowSignalR", policy =>
+                    {
+                        policy.SetIsOriginAllowed(_ => true)
+                              .AllowAnyHeader()
+                              .AllowAnyMethod()
+                              .AllowCredentials();
+                    });
+                });
                 var app = builder.Build();
 
                 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -137,10 +123,14 @@ namespace OrderFlow.Api
                     await IdentityDataSeeder.AdminSeederAsync(app.Services);
                 }
 
+                app.UseCors("AllowSignalR");
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
                 app.UseAuthorization();
                 app.MapControllers();
+
+                app.MapHub<OrderHub>("/hubs/orders");
+
 
                 app.MapHealthChecks("/health/live", new HealthCheckOptions
                 {

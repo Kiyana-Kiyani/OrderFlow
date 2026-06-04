@@ -23,7 +23,6 @@ namespace OrderFlow.Application.Features.Admin.GetUserById
                 user.EmailConfirmed,
                 user.Roles
                 );
-
         }
     }
 }

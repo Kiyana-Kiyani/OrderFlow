@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using MassTransit;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Domain.Entities;
 using OrderFlow.Infrastructure.Identity;
@@ -8,7 +10,7 @@ using OrderFlow.Infrastructure.Persistence.Configurations;
 
 namespace OrderFlow.Infrastructure.Persistence
 {
-    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid> , IApplicationDbContext
+    public class ApplicationDbContext : IdentityDbContext<AppIdentityUser, IdentityRole<Guid>, Guid>, IApplicationDbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -19,7 +21,12 @@ namespace OrderFlow.Infrastructure.Persistence
         public DbSet<MenuItem> MenuItems => Set<MenuItem>();
         public DbSet<CustomerOrder> CustomerOrders => Set<CustomerOrder>();
         public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        public DbSet<Courier> Couriers => Set<Courier>();
 
+        public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+        {
+            return await Database.BeginTransactionAsync(cancellationToken);
+        }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -33,6 +40,7 @@ namespace OrderFlow.Infrastructure.Persistence
             builder.Entity<IdentityUserToken<Guid>>().ToTable("UserTokens");
 
             builder.ApplyConfigurationsFromAssembly(typeof(RestaurantConfiguration).Assembly);
+            builder.AddTransactionalOutboxEntities();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

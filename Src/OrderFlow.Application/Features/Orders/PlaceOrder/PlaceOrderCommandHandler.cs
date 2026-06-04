@@ -28,15 +28,13 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
 
         public async Task<PlaceOrderResponse> Handle(PlaceOrderCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("ddddddd");
-
             var restaurant = _dbContext.Restaurants.AsNoTracking()
                 .FirstOrDefault(r => r.Id == request.RestaurantId && r.IsActive);
 
             if (restaurant is null)
                 throw new NotFoundException("Restaurant", request.RestaurantId);
 
-            var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name);
+            var order = new CustomerOrder(_currentUser.UserId, request.RestaurantId, restaurant.Name, request.CustomerAddress, request.CustomerLatitude, request.CustomerLongitude);
 
             var menuItemIds = request.Items.Select(c => c.MenuItemId).Distinct().ToList();
 
@@ -59,16 +57,17 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
                     order.AddOrderItem(item.Quantity, menuItem.Price, item.MenuItemId, menuItem.Name);
             }
             await _dbContext.CustomerOrders.AddAsync(order);
+            var orderPlaceEvent = OrderPlacedIntegrationEvent.
+                   CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
+
+            await _publishEndpoint.Publish(orderPlaceEvent, cancellationToken);
+
             await _dbContext.SaveChangesAsync(cancellationToken);
+
 
             _logger.LogInformation(
                 "Order {OrderId} placed successfully. User: {UserId}, Restaurant: {RestaurantId}, Total: {TotalAmount}, ItemCount: {ItemCount}",
                 order.Id, _currentUser.UserId, request.RestaurantId, order.TotalAmount, request.Items.Count);
-
-            var orderPlaceEvent = OrderPlacedIntegrationEvent.
-                CreateNew(order.Id, order.CustomerUserId, order.RestaurantId, order.TotalAmount);
-
-            await _publishEndpoint.Publish(orderPlaceEvent, ctx => ctx.SetRoutingKey("orderplaced"), cancellationToken);
 
             return new PlaceOrderResponse(order.Id, order.Status, order.TotalAmount, order.CreatedAt);
         }

@@ -1,11 +1,11 @@
-﻿using OrderFlow.Domain.Exceptions.Restauramt;
+﻿using OrderFlow.Domain.Exceptions.Restaurant;
 
 namespace OrderFlow.Domain.Entities
 {
     public class Restaurant
     {
         private readonly List<MenuItem> _menuItems = new();
-        public Restaurant(Guid ownerUserId, string name, string address, string? description = null)
+        public Restaurant(Guid ownerUserId, string name, string address, double latitude, double longitude, string? description = null)
         {
             if (ownerUserId == Guid.Empty) throw new ArgumentException("Owner is required.", nameof(ownerUserId));
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Restaurant name is required.", nameof(name));
@@ -17,12 +17,16 @@ namespace OrderFlow.Domain.Entities
             IsActive = true;
             CreatedAtUtc = DateTime.UtcNow;
             Description = NormalizeOptional(description);
+            Longitude = longitude;
+            Latitude = latitude;
         }
         private Restaurant() { }
 
         public Guid Id { get; private set; }
         public string Name { get; private set; } = default!;
         public string Address { get; private set; } = default!;
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public string? Description { get; private set; }
         public bool IsActive { get; private set; }
         public Guid OwnerUserId { get; private set; }
@@ -34,10 +38,12 @@ namespace OrderFlow.Domain.Entities
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Restaurant name is required.", nameof(name));
             Name = name.Trim();
         }
-        public void ChangeAddress(string address)
+        public void ChangeAddress(string address, double latitude, double longitude)
         {
             if (string.IsNullOrWhiteSpace(address)) throw new ArgumentException("Restaurant address is required.", nameof(address));
             Address = address.Trim();
+            Latitude = latitude;
+            Longitude = longitude;
         }
         public void Deactivate() => IsActive = false;
         public void Activate() => IsActive = true;

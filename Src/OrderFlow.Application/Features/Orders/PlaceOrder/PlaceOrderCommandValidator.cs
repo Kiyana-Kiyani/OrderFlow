@@ -8,7 +8,7 @@ namespace OrderFlow.Application.Features.Orders.PlaceOrder
         {
             RuleFor(x => x.RestaurantId).NotEmpty();
 
-            RuleFor(x=> x.Items).NotNull().NotEmpty();
+            RuleFor(x => x.Items).NotNull().NotEmpty();
 
             RuleForEach(x => x.Items).ChildRules(item =>
             {

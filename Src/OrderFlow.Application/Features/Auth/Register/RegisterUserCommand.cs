@@ -8,5 +8,4 @@ namespace OrderFlow.Application.Features.Auth.Register
         string Email,
         string Password
         ) : IRequest<AuthResult>;
-
 }

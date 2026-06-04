@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "OrderFlow.Worker.Courier": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

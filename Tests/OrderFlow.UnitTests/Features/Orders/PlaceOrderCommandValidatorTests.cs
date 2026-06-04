@@ -1,5 +1,6 @@
 ﻿using FluentValidation.TestHelper;
 using OrderFlow.Application.Features.Orders.PlaceOrder;
+
 namespace OrderFlow.UnitTests.Features.Orders
 {
     public class PlaceOrderCommandValidatorTests
@@ -13,79 +14,109 @@ namespace OrderFlow.UnitTests.Features.Orders
 
         [Theory]
         [InlineData(0)]
-        [InlineData(-1)]
+        [InlineData(-2)]
         public void Validate_ShouldHaveError_WhenQuantityIsNotGreaterThanZero(int quantity)
         {
-            //arrange
-            var command = new PlaceOrderCommand(Guid.NewGuid(), new List<PlaceOrderItemCommand>
-                        {
-                            new PlaceOrderItemCommand(Guid.NewGuid(), quantity),
-                        });
-            //act
+            // Arrange
+            var command = new PlaceOrderCommand(
+                RestaurantId: Guid.NewGuid(),
+                Items: new List<PlaceOrderItemCommand>
+                {
+                    new PlaceOrderItemCommand(Guid.NewGuid(), quantity)
+                },
+                CustomerAddress: "Berlin Center",
+                CustomerLatitude: 52.5200,
+                CustomerLongitude: 13.4050
+            );
+
+            // Act
             var result = _validator.TestValidate(command);
 
-            //assert
-            result.ShouldHaveValidationErrorFor(c => c.Items[0].Quantity);
-
+            // Assert
+            result.ShouldHaveValidationErrorFor("Items[0].Quantity");
         }
 
         [Theory]
         [InlineData(1)]
-        [InlineData(20)]
+        [InlineData(10)]
         public void Validate_ShouldNotHaveError_WhenCommandIsValid(int quantity)
         {
-            //arrange
-            var command = new PlaceOrderCommand(Guid.NewGuid(), new List<PlaceOrderItemCommand>
-                        {
-                            new PlaceOrderItemCommand(Guid.NewGuid(), quantity),
-                        });
-            //act
+            // Arrange
+            var command = new PlaceOrderCommand(
+                RestaurantId: Guid.NewGuid(),
+                Items: new List<PlaceOrderItemCommand>
+                {
+                    new PlaceOrderItemCommand(Guid.NewGuid(), quantity)
+                },
+                CustomerAddress: "Berlin Center",
+                CustomerLatitude: 52.5200,
+                CustomerLongitude: 13.4050
+            );
+
+            // Act
             var result = _validator.TestValidate(command);
 
-            //assert
-            result.ShouldNotHaveValidationErrorFor(c => c.Items[0].Quantity);
+            // Assert
+            result.ShouldNotHaveValidationErrorFor("Items[0].Quantity");
         }
 
         [Fact]
-        public void Should_Have_Error_When_RestaurantId_Is_Empty()
+        public void Validate_ShouldHaveError_WhenRestaurantIdIsEmpty()
         {
             // Arrange
-            var command = new PlaceOrderCommand(RestaurantId: Guid.Empty, Items: new List<PlaceOrderItemCommand>());
+            var command = new PlaceOrderCommand(
+                RestaurantId: Guid.Empty,
+                Items: new List<PlaceOrderItemCommand> { new PlaceOrderItemCommand(Guid.NewGuid(), 1) },
+                CustomerAddress: "Berlin",
+                CustomerLatitude: 52.5200,
+                CustomerLongitude: 13.4050
+            );
 
-            // Act & Assert
+            // Act
             var result = _validator.TestValidate(command);
+
+            // Assert
             result.ShouldHaveValidationErrorFor(x => x.RestaurantId);
         }
 
         [Fact]
-        public void Should_Have_Error_When_Items_Is_Empty()
+        public void Validate_ShouldHaveError_WhenItemsListIsEmpty()
         {
             // Arrange
-            var command = new PlaceOrderCommand
-            (
+            var command = new PlaceOrderCommand(
                 RestaurantId: Guid.NewGuid(),
-                Items: new List<PlaceOrderItemCommand>()
+                Items: new List<PlaceOrderItemCommand>(),
+                CustomerAddress: "Berlin",
+                CustomerLatitude: 52.5200,
+                CustomerLongitude: 13.4050
             );
 
-            // Act & Assert
+            // Act
             var result = _validator.TestValidate(command);
+
+            // Assert
             result.ShouldHaveValidationErrorFor(x => x.Items);
         }
 
         [Fact]
-        public void Should_Have_Error_When_MenuItemId_In_Items_Is_Empty()
+        public void Validate_ShouldHaveError_WhenMenuItemIdIsEmpty()
         {
             // Arrange
-            var command = new PlaceOrderCommand
-            (
+            var command = new PlaceOrderCommand(
                 RestaurantId: Guid.NewGuid(),
                 Items: new List<PlaceOrderItemCommand>
-            {
-                new PlaceOrderItemCommand(Guid.Empty, 5)
-            }
+                {
+                    new PlaceOrderItemCommand(Guid.Empty, 1)
+                },
+                CustomerAddress: "Berlin",
+                CustomerLatitude: 52.5200,
+                CustomerLongitude: 13.4050
             );
 
+            // Act
             var result = _validator.TestValidate(command);
+
+            // Assert
             result.ShouldHaveValidationErrorFor("Items[0].MenuItemId");
         }
     }

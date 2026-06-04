@@ -2,8 +2,5 @@
 
 namespace OrderFlow.Application.Features.Admin.RemoveRoleFromUser
 {
-    public record RemoveRoleFromUserCommand(
-        Guid UserId,
-        string Role
-    ) : IRequest;
+    public record RemoveRoleFromUserCommand(Guid UserId, string Role) : IRequest;
 }

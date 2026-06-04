@@ -9,6 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Features\Admin\**" />
+    <Compile Remove="Features\Auth\**" />
+    <Compile Remove="Features\MenuItems\**" />
+    <EmbeddedResource Remove="Features\Admin\**" />
+    <EmbeddedResource Remove="Features\Auth\**" />
+    <EmbeddedResource Remove="Features\MenuItems\**" />
+    <None Remove="Features\Admin\**" />
+    <None Remove="Features\Auth\**" />
+    <None Remove="Features\MenuItems\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -27,17 +39,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Src\OrderFlow.Application\OrderFlow.Application.csproj" />
+    <ProjectReference Include="..\..\Src\OrderFlow.Domain\OrderFlow.Domain.csproj" />
     <ProjectReference Include="..\..\Src\OrderFlow.Infrastructure\OrderFlow.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Features\Admin\" />
-    <Folder Include="Features\Auth\" />
-    <Folder Include="Features\MenuItems\" />
   </ItemGroup>
 
 </Project>

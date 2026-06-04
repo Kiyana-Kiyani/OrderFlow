@@ -48,7 +48,7 @@ namespace OrderFlow.Api.Controllers
             return Ok(response);
         }
 
-        [HttpPatch("{id:guid}/cancel")]
+        [HttpPost("{id:guid}/cancel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

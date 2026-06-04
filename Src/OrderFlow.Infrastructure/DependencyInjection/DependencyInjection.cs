@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,31 +9,34 @@ using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions;
 using OrderFlow.Application.Abstractions.Authentication;
 using OrderFlow.Application.Configuration;
-using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Infrastructure.Authentication;
+using OrderFlow.Infrastructure.Consumers;
 using OrderFlow.Infrastructure.Identity;
+using OrderFlow.Infrastructure.Notifications;
 using OrderFlow.Infrastructure.Persistence;
+using OrderFlow.Infrastructure.Services;
+using StackExchange.Redis;
 
 
 namespace OrderFlow.Infrastructure.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration,
-            Action<IBusRegistrationConfigurator>? configureConsumers = null,
-            Action<IBusRegistrationContext, IRabbitMqBusFactoryConfigurator>? configureRabbitMqEndpoints = null)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICurrentUser, CurrentUser>();
-            services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
             services.AddScoped<IAdminService, AdminService>();
-            services.AddScoped<ApplicationDbContext>();
-
+            services.AddScoped<ICourierTrackerService, CourierTrackerService>();
             services.AddHttpContextAccessor();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("Default")!));
+
+            services.AddScoped<IApplicationDbContext>(provider =>
+                provider.GetRequiredService<ApplicationDbContext>());
+
 
             services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
             var jwtOptions = configuration.GetSection("Jwt").Get<JwtOptions>() ??
@@ -71,7 +75,22 @@ namespace OrderFlow.Infrastructure.DependencyInjection
                     ValidAudience = jwtOptions.Audience,
 
                     IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
-                    ClockSkew = TimeSpan.FromMinutes(1),
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/orders"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -80,50 +99,58 @@ namespace OrderFlow.Infrastructure.DependencyInjection
             services.Configure<RabbitMqOptions>(configuration.GetSection("RabbitMQ"));
 
             var rabbitMq = configuration.GetSection("RabbitMQ");
-            services.AddMassTransit(x =>
+
+            var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"] ?? "localhost:6379";
+
+            services.AddSingleton<IConnectionMultiplexer>(sp =>
             {
-                configureConsumers?.Invoke(x);
-
-                x.UsingRabbitMq((context, cfg) =>
-                {
-                    cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
-                    {
-                        h.Username(rabbitMq["Username"]!);
-                        h.Password(rabbitMq["Password"]!);
-                    });
-
-                    cfg.Message<OrderPlacedIntegrationEvent>(x => x.SetEntityName("orderflow.events"));
-                    cfg.Publish<OrderPlacedIntegrationEvent>(x =>
-                    {
-                        x.ExchangeType = "topic";
-                        x.Durable = true;
-                    });
-                    configureRabbitMqEndpoints?.Invoke(context, cfg);
-                });
+                var configuration = ConfigurationOptions.Parse(redisConnectionString);
+                configuration.AbortOnConnectFail = false;
+                return ConnectionMultiplexer.Connect(configuration);
             });
 
 
-            //services.AddSingleton<IConnection>(sp =>
-            //{
-            //    var rabbit = sp.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
-            //    if (string.IsNullOrWhiteSpace(rabbit.Host) || string.IsNullOrWhiteSpace(rabbit.Username) ||
-            //        string.IsNullOrWhiteSpace(rabbit.Password) || rabbit.Port <= 0)
-            //    {
-            //        throw new InvalidOperationException("RabbitMQ configuration is invalid.");
-            //    }
+            services.AddSignalR(options =>
+            {
+                options.AddFilter<OrderHubFilter>();
+            }).AddStackExchangeRedis(redisConnectionString, options =>
+                {
+                    options.Configuration.ChannelPrefix = RedisChannel.Literal("OrderFlow_WebSockets");
+                });
 
-            //    var factory = new ConnectionFactory
-            //    {
-            //        HostName = rabbit.Host,
-            //        Port = rabbit.Port,
-            //        UserName = rabbit.Username,
-            //        Password = rabbit.Password
-            //    };
 
-            //    return factory.CreateConnectionAsync().GetAwaiter().GetResult();
-            //});
-            //       services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
+            services.AddMassTransit(x =>
+                   {
+                       x.AddEntityFrameworkOutbox<ApplicationDbContext>(o =>
+                       {
+                           o.UseSqlServer();
+                           o.UseBusOutbox();
+                       });
 
+                       x.AddConsumer<PaymentSucceededConsumer>();
+                       x.AddConsumer<PaymentFailedConsumer>();
+                       x.AddConsumer<OrderPickedUpConsumer>();
+
+                       x.SetKebabCaseEndpointNameFormatter();
+
+                       x.UsingRabbitMq((context, cfg) =>
+                       {
+                           cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
+                           {
+                               h.Username(rabbitMq["Username"]!);
+                               h.Password(rabbitMq["Password"]!);
+                           });
+                           cfg.UseMessageRetry(r =>
+                           {
+                               r.Interval(3, TimeSpan.FromSeconds(2));
+                           });
+
+                           cfg.ConfigureEndpoints(context);
+
+                       });
+                   });
+
+            services.AddSingleton<IOrderNotificationService, OrderNotificationService>();
 
             return services;
         }

@@ -5,15 +5,17 @@
         public bool Succeeded { get; private set; }
         public string? Error { get; private set; }
         public string? Token { get; private set; }
+        public string? RefreshToken { get; private set; }
         public Guid? UserId { get; private set; }
 
         private AuthResult() { }
-        public static AuthResult Success(string token, Guid userId)
+        public static AuthResult Success(string token, string refreshToken, Guid userId)
         {
             return new AuthResult
             {
                 Succeeded = true,
                 Token = token,
+                RefreshToken = refreshToken,
                 UserId = userId
             };
         }
@@ -26,5 +28,10 @@
                 Error = error
             };
         }
+
+        public static AuthResult SuccessfullLogout() => new AuthResult
+        {
+            Succeeded = true,
+        };
     }
 }

@@ -1,6 +1,6 @@
-﻿using OrderFlow.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using OrderFlow.Domain.Entities;
 
 namespace OrderFlow.Infrastructure.Persistence.Configurations
 {

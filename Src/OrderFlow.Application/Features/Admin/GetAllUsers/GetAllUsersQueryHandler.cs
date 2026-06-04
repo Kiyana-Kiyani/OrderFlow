@@ -21,7 +21,6 @@ namespace OrderFlow.Application.Features.Admin.GetAllUsers
                 x.UserName,
                 x.Roles))
             .ToList().AsReadOnly();
-
         }
     }
 }

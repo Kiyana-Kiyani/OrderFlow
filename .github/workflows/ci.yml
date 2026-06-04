@@ -1,0 +1,47 @@
+name: OrderFlow CI Pipeline
+
+on:
+  push:
+    branches: [ master, Develop ]
+  pull_request:
+    branches: [ master, Develop ]
+
+jobs:
+  build-and-test:
+    name: Build and Run All Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    # ۱. دانلود آخرین نسخه کدهای پروژه روی سرور گیت‌هاب
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # ۲. نصب محیط دات‌نت روی سرور لینوکس گیت‌هاب
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x' # اگر از دات‌نت ۹ استفاده می‌کنی این را به '9.0.x' تغییر بده
+
+    # ۳. بازیابی و دانلود پکیج‌های نیوگت (Nuget Restore)
+    - name: Restore NuGet Packages
+      run: dotnet restore OrderFlow.sln
+
+    # ۴. کامپایل و بیلد کردن کل سولوشن در حالت Release
+    - name: Build Solution
+      run: dotnet build OrderFlow.sln --configuration Release --no-restore
+
+    # ۵. اجرای تست‌های واحد اصلی دامین و فیچرها
+    - name: Run Core Unit Tests
+      run: dotnet test Tests/OrderFlow.UnitTests/OrderFlow.UnitTests.csproj --configuration Release --no-build --verbosity normal
+
+    # ۶. اجرای تست‌های اختصاصی ورکر پرداخت
+    - name: Run Payment Worker Tests
+      run: dotnet test Tests/OrderFlow.Workers.Payment.Tests/OrderFlow.Workers.Payment.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    # ۷. اجرای تست‌های اختصاصی ورکر پیک
+    - name: Run Courier Worker Tests
+      run: dotnet test Tests/OrderFlow.Worker.Courier.Tests/OrderFlow.Worker.Courier.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    # ۸. اجرای تست‌های یکپارچگی (مبتنی بر داکر و Testcontainers)
+    - name: Run Integration Tests
+      run: dotnet test Tests/OrderFlow.IntegrationTests/OrderFlow.IntegrationTests.csproj --configuration Release --no-build --verbosity normal

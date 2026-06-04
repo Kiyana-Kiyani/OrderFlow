@@ -3,11 +3,10 @@
     public enum OrderStatus
     {
         Created,
-        Accepted,
-        Rejected,
-        Cancelled,
+        Preparing,
+        ReadyForPickup,
         OutForDelivery,
         Delivered,
-
+        Cancelled
     }
 }

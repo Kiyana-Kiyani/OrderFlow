@@ -1,5 +1,4 @@
 using MassTransit;
-using OrderFlow.Contracts.IntegrationEvents;
 using OrderFlow.Workers.Payment.Consumers;
 
 using Serilog;
@@ -25,6 +24,9 @@ namespace OrderFlow.Workers.Payment
             builder.Services.AddMassTransit(x =>
             {
                 x.AddConsumer<OrderPlacedConsumer>();
+
+                x.SetKebabCaseEndpointNameFormatter();
+
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.Host(rabbitMq["Host"], rabbitMq["VirtualHost"], h =>
@@ -37,35 +39,15 @@ namespace OrderFlow.Workers.Payment
                         r.Interval(3, TimeSpan.FromSeconds(2));
                     });
 
-                    cfg.ReceiveEndpoint("orderflow-payment-queue", e =>
-                    {
-                        e.SetQuorumQueue();
-                        e.ConfigureConsumeTopology = false;
-                        e.Bind("orderflow.events", s =>
-                        {
-                            s.RoutingKey = "orderplaced";
-                            s.ExchangeType = "topic";
-                        });
-                        e.ConfigureConsumer<OrderPlacedConsumer>(context);
-                    });
+                    cfg.UseInMemoryOutbox(context);
 
-                    cfg.Message<PaymentSucceededIntegrationEvent>(x => x.SetEntityName("Payment.Result"));
-                    cfg.Publish<PaymentSucceededIntegrationEvent>(x =>
-                    {
-                        x.ExchangeType = "topic";
-                        x.Durable = true;
-                    });
-
-                    cfg.Message<PaymentFailedIntegrationEvent>(x => x.SetEntityName("Payment.Result"));
-                    cfg.Publish<PaymentFailedIntegrationEvent>(x =>
-                    {
-                        x.ExchangeType = "topic";
-                        x.Durable = true;
-                    });
+                    cfg.ConfigureEndpoints(context);
 
 
                 });
             });
+
+
 
             var host = builder.Build();
             host.Run();

@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OrderFlow.Application.Abstractions.Authentication;
+using OrderFlow.Infrastructure.Persistence;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace OrderFlow.Infrastructure.Authentication
@@ -10,14 +12,15 @@ namespace OrderFlow.Infrastructure.Authentication
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly JwtOptions _jwtOptions;
-
-        public JwtTokenGenerator(IOptions<JwtOptions> jwtOptions)
+        private readonly ApplicationDbContext _dbContext;
+        public JwtTokenGenerator(IOptions<JwtOptions> jwtOptions, ApplicationDbContext dbContext)
         {
             _jwtOptions = jwtOptions.Value;
+            _dbContext = dbContext;
         }
-        public async Task<string> GenerateTokenAsync(Guid id, string email, IEnumerable<string> roles)
+        public string GenerateToken(Guid id, string email, IEnumerable<string> roles, Dictionary<string, string>? customClaims = null)
         {
-            var claims = await CreateClaimsAsync(id, email, roles);
+            var claims = CreateClaimsAsync(id, email, roles, customClaims);
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.SecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -31,16 +34,33 @@ namespace OrderFlow.Infrastructure.Authentication
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
-        private async Task<Claim[]> CreateClaimsAsync(Guid id, string email, IEnumerable<string> roles)
+        public string GenerateRefreshToken()
         {
-            var claims = new List<Claim>();
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, id.ToString()));
+            var randomNumber = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+
+        private Claim[] CreateClaimsAsync(Guid id, string email, IEnumerable<string> roles, Dictionary<string, string>? customClaims)
+        {
+            var claims = new List<Claim>
+            {
+            new Claim(ClaimTypes.NameIdentifier, id.ToString())
+            };
 
             if (!string.IsNullOrWhiteSpace(email))
                 claims.Add(new Claim(ClaimTypes.Email, email));
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+            if (customClaims is not null)
+            {
+                foreach (var claim in customClaims)
+                {
+                    claims.Add(new Claim(claim.Key, claim.Value));
+                }
+            }
 
             return claims.ToArray();
         }
