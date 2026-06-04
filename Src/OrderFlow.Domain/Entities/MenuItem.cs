@@ -47,6 +47,5 @@ namespace OrderFlow.Domain.Entities
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
-
     }
 }

@@ -37,7 +37,6 @@ namespace OrderFlow.Domain.Entities
         public double CustomerLatitude { get; private set; }
         public double CustomerLongitude { get; private set; }
         public IReadOnlyCollection<OrderItem> OrderItems => _orderItems;
-        // این فیلد را به انتهای کلاس CustomerOrder اضافه کن:
         public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
         private void RecalculateTotalAmount()
@@ -88,28 +87,23 @@ namespace OrderFlow.Domain.Entities
             if (Status == OrderStatus.Cancelled)
                 throw new OrderStateException("Cannot modify a cancelled order.");
         }
-
-        // Called by PaymentSucceededConsumer
         public void MarkPaymentAsSucceeded()
         {
             if (Payment != PaymentStatus.Pending)
                 throw new OrderStateException("Payment is not pending.");
 
             Payment = PaymentStatus.Succeeded;
-            // Status stays OrderStatus.Created! But now it's safe for the kitchen to see.
         }
 
-        // Called by PaymentFailedConsumer
         public void MarkPaymentAsFailed()
         {
             if (Payment != PaymentStatus.Pending)
                 throw new OrderStateException("Payment is not pending.");
 
             Payment = PaymentStatus.Failed;
-            Status = OrderStatus.Cancelled; // Automatically turn the order off structurally
+            Status = OrderStatus.Cancelled;
         }
 
-        // Kitchen action guard check
         public void StartPreparing()
         {
             if (Payment != PaymentStatus.Succeeded)
@@ -123,7 +117,6 @@ namespace OrderFlow.Domain.Entities
 
         public void Cancel()
         {
-            // Prevent manual cancellation entirely if it's already been funded
             if (Payment == PaymentStatus.Succeeded)
                 throw new OrderStateException("Paid orders cannot be canceled due to no-refund policy constraints.");
 
@@ -162,7 +155,6 @@ namespace OrderFlow.Domain.Entities
 
             Status = OrderStatus.OutForDelivery;
         }
-
         public void TransitionToDelivered(Guid courierId)
         {
             if (Status != OrderStatus.OutForDelivery)
