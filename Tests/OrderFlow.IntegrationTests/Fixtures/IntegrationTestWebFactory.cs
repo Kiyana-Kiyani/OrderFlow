@@ -12,7 +12,6 @@ using OrderFlow.IntegrationTests.Features.Auth;
 using Testcontainers.MsSql;
 using Testcontainers.RabbitMq;
 using Testcontainers.Redis;
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace OrderFlow.IntegrationTests.Fixtures
 {

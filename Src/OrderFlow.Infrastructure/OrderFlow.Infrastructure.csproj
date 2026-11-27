@@ -7,23 +7,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MassTransit.EntityFrameworkCore" Version="8.5.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.14" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.14" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="9.0.16" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.14">
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.14">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	  <PackageReference Include="MassTransit" Version="8.5.9" />
-	  <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.9" />
-	  <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.16" />
-	  <PackageReference Include="StackExchange.Redis" Version="2.13.1" />
+    <PackageReference Include="MassTransit" />
+      <PackageReference Include="MassTransit.RabbitMQ" />
+      <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+      <PackageReference Include="StackExchange.Redis" />
   </ItemGroup>
 
   <ItemGroup>
